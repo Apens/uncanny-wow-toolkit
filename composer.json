@@ -11,6 +11,7 @@
     "require": {
         "php": ">=8.3",
         "ext-mbstring": "*",
+        "halaxa/json-machine": "^1.2",
         "psr/cache": "^2.0 || ^3.0",
         "psr/http-client": "^1.0",
         "psr/http-factory": "^1.0",

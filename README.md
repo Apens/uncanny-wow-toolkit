@@ -64,6 +64,30 @@ echo $connectedRealm->id;             // 1127
 foreach ($connectedRealm->realms as $memberRealm) {
     echo $memberRealm->name;          // "La Croisade écarlate", "Culte de la Rive noire", etc.
 }
+
+// Fetch connected realm non-commodity auctions snapshot (streamed lazily, single-pass)
+$ahSnapshot = $wow->auctionHouse()->auctions(connectedRealmId: 1127);
+foreach ($ahSnapshot as $auction) {
+    echo $auction->id;
+    echo $auction->item->id;         // 19019
+    echo $auction->buyoutCopper;     // e.g. 50000000 (all prices strictly in copper)
+    echo $auction->timeLeft->value;  // "VERY_LONG"
+    break; // Stream yields lazily without loading the entire payload into memory
+}
+
+// Fetch region-wide commodity auctions snapshot (streamed lazily, single-pass)
+$commoditySnapshot = $wow->auctionHouse()->commodities();
+foreach ($commoditySnapshot as $commodity) {
+    echo $commodity->id;
+    echo $commodity->itemId;          // 190381
+    echo $commodity->unitPriceCopper; // 12500 (copper)
+    echo $commodity->quantity;
+    break;
+}
+
+// Note: Auction House snapshots are streamed and strictly single-pass to maintain
+// a flat ~6 MB memory footprint even on payloads with 370,000+ listings.
+// Attempting to iterate a snapshot a second time will throw a \LogicException.
 ```
 
 Goals

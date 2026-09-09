@@ -7,6 +7,8 @@ namespace UncannyWoW\Provider\Blizzard\Client;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\StreamInterface;
 use UncannyWoW\Core\Config\ClientConfiguration;
 use UncannyWoW\Core\Domain\Enum\Locale;
 use UncannyWoW\Core\Domain\Enum\Region;
@@ -40,6 +42,72 @@ class BlizzardApiClient
         ?string $resourceTypeForNotFound = null,
         ?string $identifierForNotFound = null,
     ): array {
+        $response = $this->send(
+            region: $region,
+            path: $path,
+            queryParams: $queryParams,
+            locale: $locale,
+            namespace: $namespace,
+            resourceTypeForNotFound: $resourceTypeForNotFound,
+            identifierForNotFound: $identifierForNotFound,
+        );
+
+        $bodyRaw = (string) $response->getBody();
+
+        try {
+            /** @var mixed $data */
+            $data = json_decode($bodyRaw, true, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            throw new InvalidResponseException('Malformed JSON payload received from Blizzard API.', 0, $e);
+        }
+
+        if (!is_array($data)) {
+            throw new InvalidResponseException('Expected JSON object/array from Blizzard API response.');
+        }
+
+        /** @var array<string, mixed> $data */
+        return $data;
+    }
+
+    /**
+     * Perform an authenticated GET request against the Blizzard API and return the raw response stream.
+     *
+     * @param array<string, string> $queryParams
+     */
+    public function getStream(
+        Region $region,
+        string $path,
+        array $queryParams = [],
+        ?Locale $locale = null,
+        ?string $namespace = null,
+        ?string $resourceTypeForNotFound = null,
+        ?string $identifierForNotFound = null,
+    ): StreamInterface {
+        $response = $this->send(
+            region: $region,
+            path: $path,
+            queryParams: $queryParams,
+            locale: $locale,
+            namespace: $namespace,
+            resourceTypeForNotFound: $resourceTypeForNotFound,
+            identifierForNotFound: $identifierForNotFound,
+        );
+
+        return $response->getBody();
+    }
+
+    /**
+     * @param array<string, string> $queryParams
+     */
+    private function send(
+        Region $region,
+        string $path,
+        array $queryParams = [],
+        ?Locale $locale = null,
+        ?string $namespace = null,
+        ?string $resourceTypeForNotFound = null,
+        ?string $identifierForNotFound = null,
+    ): ResponseInterface {
         $token = $this->tokenProvider->getAccessToken();
         $host = BlizzardApiEndpointResolver::resolveHost($region);
 
@@ -87,20 +155,6 @@ class BlizzardApiClient
             throw new ProviderUnavailableException(sprintf('Unexpected HTTP status %d received from Blizzard API.', $statusCode));
         }
 
-        $bodyRaw = (string) $response->getBody();
-
-        try {
-            /** @var mixed $data */
-            $data = json_decode($bodyRaw, true, 512, JSON_THROW_ON_ERROR);
-        } catch (\JsonException $e) {
-            throw new InvalidResponseException('Malformed JSON payload received from Blizzard API.', 0, $e);
-        }
-
-        if (!is_array($data)) {
-            throw new InvalidResponseException('Expected JSON object/array from Blizzard API response.');
-        }
-
-        /** @var array<string, mixed> $data */
-        return $data;
+        return $response;
     }
 }

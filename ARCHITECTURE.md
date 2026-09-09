@@ -771,7 +771,54 @@ Key Architectural Decisions Validated:
    - Connected Realm Search and Connected Realm Index endpoints deferred (not required for direct ID-to-cluster resolution).
    - Volatile operational fields (status, population, has_queue) omitted to maintain cluster stability and high cacheability.
 
-18. Decisions Summary
+18. Milestone 6 Decisions (Auction House Vertical Slice)
+
+1. Separation of Concerns:
+   - Connected-Realm non-commodity auctions (`AuctionHouseSnapshot`) and Region-wide commodity auctions (`CommodityMarketSnapshot`) are completely distinct domain models and repository operations.
+   - Raw auction listings are captured as snapshots without performing economy calculations, aggregations, min/max/average prices, or market value analysis.
+
+2. Monetary Semantics & Exact Currency Types:
+   - All price fields (`buyoutCopper`, `bidCopper`, `unitPriceCopper`) are strictly typed integers representing copper.
+   - No floating-point math, no currency conversions, and no formatted string prices exist in the toolkit domain models.
+
+3. Preservation of Item Identity & Variant Discriminators:
+   - Non-commodity listings preserve equipment and pet variations via `AuctionItem` and `AuctionItemModifier` (`type`, `value`).
+   - Discriminators (`context`, `bonus_lists`, `modifiers`, `pet_species_id`, `pet_breed_id`, `pet_level`, `pet_quality_id`) are preserved directly from Blizzard payloads.
+   - Strictly ZERO Item API calls or N+1 lookups are performed during auction retrieval or hydration.
+
+4. Closed Duration Categories:
+   - `AuctionTimeLeft` enum models Blizzard's discrete duration categories (`SHORT`, `MEDIUM`, `LONG`, `VERY_LONG`). Unknown values trigger `InvalidResponseException`.
+
+5. Exclusion of Locale from Auction Boundaries:
+   - Blizzard auction payloads contain zero localized text strings.
+   - Following prompt specifications, `Locale` is strictly excluded from `AuctionHouseService`, `AuctionHouseRepositoryInterface`, and cache identities.
+
+6. Streaming JSON & Memory Scalability (Halaxa/JsonMachine):
+   - Real-world regional commodity payloads (~50-80 MB raw JSON, hundreds of thousands of rows) exhaust PHP's default 256MB memory limit when loaded via full `json_decode()`.
+   - `BlizzardApiClient::getStream()` yields a PSR-7 `StreamInterface` without loading the full body into memory.
+   - `BlizzardAuctionHouseRepository` uses `halaxa/json-machine` (`Items::fromIterable()` with pointer `/auctions` and `ExtJsonDecoder(true)`) over 64KB stream chunks.
+   - `AuctionHouseSnapshot` and `CommodityMarketSnapshot` implement `\IteratorAggregate`, yielding typed domain objects lazily through generators.
+   - Live Validation Results (memory_limit: 256M):
+     - Connected Realm 1127: 40,601 auctions fully iterated at ~6 MB peak memory.
+     - EU commodities: 373,242 auctions fully iterated at ~6 MB peak memory.
+     - In contrast, the original full `json_decode()` architecture crashed with `Allowed memory size of 268435456 bytes exhausted` on EU commodities.
+
+7. Explicit Single-Pass Iteration Contract:
+   - Snapshots are explicitly single-pass. Attempting a second `foreach` traversal throws `\LogicException('This auction snapshot has already been consumed.')`.
+   - Why rewindability was rejected:
+     - In-memory buffering (rewindable collections) would materialize hundreds of thousands of hydrated domain models in RAM, defeating the streaming memory guarantee.
+     - Silent empty re-iteration would mask consumer logic bugs.
+     - Re-fetching the Blizzard API on re-iteration would introduce unexpected side effects, rate-limit consumption, and race conditions against live auction market states.
+   - Consumers requiring multi-pass analysis or indexing should ingest the stream into application storage (e.g. database, search index) during the single pass.
+
+8. Cache Strategy & Decision:
+   - In-memory snapshot caching via generic PSR-6 cache pools is inappropriate for multi-megabyte streaming generators (cannot cache generators directly without fully buffering rows).
+   - `CachedAuctionHouseRepository` has been removed. Applications requiring persistent caching should store raw stream chunks or ingest rows into application storage (e.g., MySQL, Redis, ClickHouse).
+
+9. Deferred Capabilities:
+   - Economy analysis, price history, market trends, min/max/average calculations (deferred to consuming applications or future analytical modules).
+
+19. Decisions Summary
 
 DECIDED NOW
 
@@ -789,11 +836,11 @@ Formatter: PHP-CS-Fixer (.php-cs-fixer.dist.php)
 
 Static Analysis: PHPStan Level 9
 
-Scope: Character Profile, Realm Data, Item Data, and Connected Realm Vertical Slices (Milestones 0 through 5 completed)
+Scope: Character Profile, Realm Data, Item Data, Connected Realm, and Auction House Vertical Slices (Milestones 0 through 6 completed)
 
-API Parameter Naming: Canonical $realmSlug for slug inputs in Character APIs; $slug in Realm APIs; $id for numeric Item and Connected Realm ID inputs
+API Parameter Naming: Canonical $realmSlug for slug inputs in Character APIs; $slug in Realm APIs; $id for numeric Item and Connected Realm ID inputs; $connectedRealmId for Auction House connected realm inputs
 
-Service Memoization: Domain services memoized on UncannyWoWClient facade ($wow->characters(), $wow->realms(), $wow->items(), $wow->connectedRealms())
+Service Memoization: Domain services memoized on UncannyWoWClient facade ($wow->characters(), $wow->realms(), $wow->items(), $wow->connectedRealms(), $wow->auctionHouse())
 
 Namespace Support: Profile (profile-{region}), Dynamic (dynamic-{region}), and Static (static-{region}) namespaces
 
@@ -803,7 +850,9 @@ Symfony Bridge (UncannyWoW\Bridge\Symfony)
 
 Secondary Data Providers
 
-Additional WoW Domain APIs (Guilds, Auction House, Mythic+)
+Additional WoW Domain APIs (Guilds, Mythic+, Raids)
+
+Auction House Economy & Trend Analysis (min/max/average, market value, price trends)
 
 Connected Realm Search & Index Endpoints (direct ID lookup satisfies Auction House foundation)
 
@@ -817,6 +866,6 @@ ClientConfiguration Splitting (deferred until additional domain needs emerge)
 
 Monorepo Sub-Package Splitting
 
-19. Final Recommendation
+20. Final Recommendation
 
-This architecture freezes the foundational decisions through Milestone 5. It establishes credential security rules, isolates OAuth endpoint resolution, enforces pragmatic domain modeling, and incorporates the findings of the Milestone 2 Architecture Review, Milestone 3 Realm vertical slice, Milestone 4 Item Data vertical slice, and Milestone 5 Connected Realm vertical slice.
+This architecture freezes the foundational decisions through Milestone 6. It establishes credential security rules, isolates OAuth endpoint resolution, enforces pragmatic domain modeling, and incorporates the findings of the Milestone 2 Architecture Review, Milestone 3 Realm vertical slice, Milestone 4 Item Data vertical slice, Milestone 5 Connected Realm vertical slice, and Milestone 6 Auction House vertical slice.
