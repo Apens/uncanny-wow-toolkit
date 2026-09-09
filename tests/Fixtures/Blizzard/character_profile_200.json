@@ -1,0 +1,33 @@
+{
+  "id": 12345678,
+  "name": "Norigosa",
+  "gender": {
+    "type": "FEMALE",
+    "name": "Female"
+  },
+  "faction": {
+    "type": "HORDE",
+    "name": "Horde"
+  },
+  "race": {
+    "id": 10,
+    "name": "Blood Elf"
+  },
+  "character_class": {
+    "id": 8,
+    "name": "Mage"
+  },
+  "active_spec": {
+    "id": 63,
+    "name": "Fire"
+  },
+  "realm": {
+    "id": 1305,
+    "slug": "la-croisade-ecarlate",
+    "name": "La Croisade écarlate"
+  },
+  "level": 80,
+  "experience": 0,
+  "achievement_points": 15400,
+  "last_login_timestamp": 1725540000000
+}
