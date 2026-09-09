@@ -9,6 +9,7 @@ use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use UncannyWoW\Core\Config\ClientConfiguration;
+use UncannyWoW\Core\Contract\Repository\AuctionHouseRepositoryInterface;
 use UncannyWoW\Core\Contract\Repository\CharacterRepositoryInterface;
 use UncannyWoW\Core\Contract\Repository\ConnectedRealmRepositoryInterface;
 use UncannyWoW\Core\Contract\Repository\ItemRepositoryInterface;
@@ -16,16 +17,19 @@ use UncannyWoW\Core\Contract\Repository\RealmRepositoryInterface;
 use UncannyWoW\Core\Domain\Enum\Locale;
 use UncannyWoW\Core\Domain\Enum\Region;
 use UncannyWoW\Core\Domain\Exception\ConfigurationException;
+use UncannyWoW\Core\Service\AuctionHouseService;
 use UncannyWoW\Core\Service\CharacterService;
 use UncannyWoW\Core\Service\ConnectedRealmService;
 use UncannyWoW\Core\Service\ItemService;
 use UncannyWoW\Core\Service\RealmService;
 use UncannyWoW\Provider\Blizzard\Auth\OAuthTokenProvider;
 use UncannyWoW\Provider\Blizzard\Client\BlizzardApiClient;
+use UncannyWoW\Provider\Blizzard\Hydrator\AuctionHouseHydrator;
 use UncannyWoW\Provider\Blizzard\Hydrator\CharacterProfileHydrator;
 use UncannyWoW\Provider\Blizzard\Hydrator\ConnectedRealmHydrator;
 use UncannyWoW\Provider\Blizzard\Hydrator\ItemHydrator;
 use UncannyWoW\Provider\Blizzard\Hydrator\RealmHydrator;
+use UncannyWoW\Provider\Blizzard\Repository\BlizzardAuctionHouseRepository;
 use UncannyWoW\Provider\Blizzard\Repository\BlizzardCharacterRepository;
 use UncannyWoW\Provider\Blizzard\Repository\BlizzardConnectedRealmRepository;
 use UncannyWoW\Provider\Blizzard\Repository\BlizzardItemRepository;
@@ -41,6 +45,7 @@ class UncannyWoWClient
     private ?RealmService $realmService = null;
     private ?ItemService $itemService = null;
     private ?ConnectedRealmService $connectedRealmService = null;
+    private ?AuctionHouseService $auctionHouseService = null;
 
     public function __construct(
         private readonly CharacterRepositoryInterface $characterRepository,
@@ -48,6 +53,7 @@ class UncannyWoWClient
         private readonly ?RealmRepositoryInterface $realmRepository = null,
         private readonly ?ItemRepositoryInterface $itemRepository = null,
         private readonly ?ConnectedRealmRepositoryInterface $connectedRealmRepository = null,
+        private readonly ?AuctionHouseRepositoryInterface $auctionHouseRepository = null,
     ) {}
 
     public static function create(
@@ -141,7 +147,17 @@ class UncannyWoWClient
             defaultTtlSeconds: 86400,
         );
 
-        return new self($cachedRepository, $config, $cachedRealmRepository, $cachedItemRepository, $cachedConnectedRealmRepository);
+        $auctionHouseHydrator = new AuctionHouseHydrator();
+        $blizzardAuctionHouseRepository = new BlizzardAuctionHouseRepository($apiClient, $auctionHouseHydrator);
+
+        return new self(
+            $cachedRepository,
+            $config,
+            $cachedRealmRepository,
+            $cachedItemRepository,
+            $cachedConnectedRealmRepository,
+            $blizzardAuctionHouseRepository,
+        );
     }
 
     public function characters(): CharacterService
@@ -174,5 +190,14 @@ class UncannyWoWClient
         }
 
         return $this->connectedRealmService ??= new ConnectedRealmService($this->connectedRealmRepository, $this->config);
+    }
+
+    public function auctionHouse(): AuctionHouseService
+    {
+        if ($this->auctionHouseRepository === null) {
+            throw new ConfigurationException('Auction house repository is not configured on this client.');
+        }
+
+        return $this->auctionHouseService ??= new AuctionHouseService($this->auctionHouseRepository, $this->config);
     }
 }

@@ -1,0 +1,64 @@
+{
+  "_links": {
+    "self": {
+      "href": "https://eu.api.blizzard.com/data/wow/connected-realm/1127/auctions?namespace=dynamic-eu"
+    }
+  },
+  "connected_realm": {
+    "href": "https://eu.api.blizzard.com/data/wow/connected-realm/1127?namespace=dynamic-eu"
+  },
+  "auctions": [
+    {
+      "id": 10000001,
+      "item": {
+        "id": 19019,
+        "context": 0,
+        "bonus_lists": [1487, 6652],
+        "modifiers": [
+          {
+            "type": 28,
+            "value": 156
+          }
+        ]
+      },
+      "quantity": 1,
+      "buyout": 50000000,
+      "bid": 45000000,
+      "time_left": "VERY_LONG"
+    },
+    {
+      "id": 10000002,
+      "item": {
+        "id": 210781,
+        "pet_species_id": 256,
+        "pet_breed_id": 3,
+        "pet_level": 25,
+        "pet_quality_id": 3
+      },
+      "quantity": 1,
+      "buyout": 1250000,
+      "bid": null,
+      "time_left": "LONG"
+    },
+    {
+      "id": 10000003,
+      "item": {
+        "id": 124105
+      },
+      "quantity": 20,
+      "buyout": null,
+      "bid": 200000,
+      "time_left": "SHORT"
+    },
+    {
+      "id": 10000004,
+      "item": {
+        "id": 168487
+      },
+      "quantity": 5,
+      "buyout": 150000,
+      "bid": 100000,
+      "time_left": "MEDIUM"
+    }
+  ]
+}
