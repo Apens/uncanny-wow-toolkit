@@ -43,6 +43,36 @@ final class RealmHydratorTest extends TestCase
         self::assertSame(1086, $realm->connectedRealmId);
     }
 
+    public function testHydrateWithFallbackConnectedRealmId(): void
+    {
+        $payload = [
+            'id' => 1086,
+            'slug' => 'la-croisade-écarlate',
+            'name' => 'La Croisade écarlate',
+        ];
+
+        $realm = $this->hydrator->hydrate($payload, fallbackConnectedRealmId: 1127);
+
+        self::assertSame(1086, $realm->id);
+        self::assertSame(1127, $realm->connectedRealmId);
+    }
+
+    public function testHydratePayloadConnectedRealmOverridesFallback(): void
+    {
+        $payload = [
+            'id' => 1086,
+            'slug' => 'la-croisade-écarlate',
+            'name' => 'La Croisade écarlate',
+            'connected_realm' => [
+                'href' => 'https://eu.api.blizzard.com/data/wow/connected-realm/1086?namespace=dynamic-eu',
+            ],
+        ];
+
+        $realm = $this->hydrator->hydrate($payload, fallbackConnectedRealmId: 9999);
+
+        self::assertSame(1086, $realm->connectedRealmId);
+    }
+
     public function testHydrateMissingConnectedRealmHref(): void
     {
         $payload = [

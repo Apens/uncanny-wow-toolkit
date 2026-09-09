@@ -1,0 +1,165 @@
+{
+  "_links": {
+    "self": {
+      "href": "https://eu.api.blizzard.com/data/wow/connected-realm/1127?namespace=dynamic-eu"
+    }
+  },
+  "id": 1127,
+  "has_queue": false,
+  "status": {
+    "type": "UP",
+    "name": "Up"
+  },
+  "population": {
+    "type": "MEDIUM",
+    "name": "Medium"
+  },
+  "realms": [
+    {
+      "id": 1127,
+      "region": {
+        "key": {
+          "href": "https://eu.api.blizzard.com/data/wow/region/3?namespace=dynamic-eu"
+        },
+        "name": "Europe",
+        "id": 3
+      },
+      "name": "Confrérie du Thorium",
+      "category": "Français",
+      "locale": "frFR",
+      "timezone": "Europe/Paris",
+      "type": {
+        "type": "NORMAL",
+        "name": "Normal"
+      },
+      "is_tournament": false,
+      "slug": "confrérie-du-thorium"
+    },
+    {
+      "id": 1086,
+      "region": {
+        "key": {
+          "href": "https://eu.api.blizzard.com/data/wow/region/3?namespace=dynamic-eu"
+        },
+        "name": "Europe",
+        "id": 3
+      },
+      "name": "La Croisade écarlate",
+      "category": "Français",
+      "locale": "frFR",
+      "timezone": "Europe/Paris",
+      "type": {
+        "type": "NORMAL",
+        "name": "Normal"
+      },
+      "is_tournament": false,
+      "slug": "la-croisade-écarlate"
+    },
+    {
+      "id": 1337,
+      "region": {
+        "key": {
+          "href": "https://eu.api.blizzard.com/data/wow/region/3?namespace=dynamic-eu"
+        },
+        "name": "Europe",
+        "id": 3
+      },
+      "name": "Culte de la Rive noire",
+      "category": "Français",
+      "locale": "frFR",
+      "timezone": "Europe/Paris",
+      "type": {
+        "type": "NORMAL",
+        "name": "Normal"
+      },
+      "is_tournament": false,
+      "slug": "culte-de-la-rive-noire"
+    },
+    {
+      "id": 647,
+      "region": {
+        "key": {
+          "href": "https://eu.api.blizzard.com/data/wow/region/3?namespace=dynamic-eu"
+        },
+        "name": "Europe",
+        "id": 3
+      },
+      "name": "Les Sentinelles",
+      "category": "Français",
+      "locale": "frFR",
+      "timezone": "Europe/Paris",
+      "type": {
+        "type": "NORMAL",
+        "name": "Normal"
+      },
+      "is_tournament": false,
+      "slug": "les-sentinelles"
+    },
+    {
+      "id": 537,
+      "region": {
+        "key": {
+          "href": "https://eu.api.blizzard.com/data/wow/region/3?namespace=dynamic-eu"
+        },
+        "name": "Europe",
+        "id": 3
+      },
+      "name": "Kirin Tor",
+      "category": "Français",
+      "locale": "frFR",
+      "timezone": "Europe/Paris",
+      "type": {
+        "type": "NORMAL",
+        "name": "Normal"
+      },
+      "is_tournament": false,
+      "slug": "kirin-tor"
+    },
+    {
+      "id": 1626,
+      "region": {
+        "key": {
+          "href": "https://eu.api.blizzard.com/data/wow/region/3?namespace=dynamic-eu"
+        },
+        "name": "Europe",
+        "id": 3
+      },
+      "name": "Les Clairvoyants",
+      "category": "Français",
+      "locale": "frFR",
+      "timezone": "Europe/Paris",
+      "type": {
+        "type": "NORMAL",
+        "name": "Normal"
+      },
+      "is_tournament": false,
+      "slug": "les-clairvoyants"
+    },
+    {
+      "id": 644,
+      "region": {
+        "key": {
+          "href": "https://eu.api.blizzard.com/data/wow/region/3?namespace=dynamic-eu"
+        },
+        "name": "Europe",
+        "id": 3
+      },
+      "name": "Conseil des Ombres",
+      "category": "Français",
+      "locale": "frFR",
+      "timezone": "Europe/Paris",
+      "type": {
+        "type": "NORMAL",
+        "name": "Normal"
+      },
+      "is_tournament": false,
+      "slug": "conseil-des-ombres"
+    }
+  ],
+  "mythic_leaderboards": {
+    "href": "https://eu.api.blizzard.com/data/wow/connected-realm/1127/mythic-leaderboard?namespace=dynamic-eu"
+  },
+  "auctions": {
+    "href": "https://eu.api.blizzard.com/data/wow/connected-realm/1127/auctions?namespace=dynamic-eu"
+  }
+}

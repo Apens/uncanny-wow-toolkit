@@ -57,6 +57,13 @@ $item = $wow->items()->get(id: 19019);
 echo $item->name;                     // "Lame-tonnerre, épée bénie du Cherchevent"
 echo $item->quality->value;           // "legendary"
 echo $item->level;                    // 29
+
+// Fetch connected realm cluster details by Connected Realm ID
+$connectedRealm = $wow->connectedRealms()->get(id: 1127);
+echo $connectedRealm->id;             // 1127
+foreach ($connectedRealm->realms as $memberRealm) {
+    echo $memberRealm->name;          // "La Croisade écarlate", "Culte de la Rive noire", etc.
+}
 ```
 
 Goals

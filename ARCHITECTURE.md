@@ -735,6 +735,42 @@ Key Architectural Decisions Validated:
    - Search query key: uw.rs.{region}.{hash48} (57 chars)
    Both stay strictly <= 64 characters, use safe [a-z0-9_.] characters, and contain zero credentials.
 
+Milestone 5 - Connected Realm Vertical Slice
+
+Status: COMPLETED
+
+Objective: Deliver typed Connected Realm cluster data by Connected Realm ID to serve as the structural foundation for the upcoming Auction House vertical slice.
+
+Key Architectural Decisions Validated:
+
+1. Canonical Connected Realm Cluster Lookup:
+   - Direct lookup by numeric ID: $wow->connectedRealms()->get(id: 1127)
+   - Strongly typed ConnectedRealm domain entity exposing int $id and list<Realm> $realms.
+   - Reuses canonical UncannyWoW\Core\Domain\Model\Realm\Realm instances with 0 code duplication.
+
+2. Contextual Fallback for Connected Realm ID in Realm Hydration:
+   - Blizzard's /data/wow/connected-realm/{id} payload omits the connected_realm link on nested realm objects.
+   - RealmHydrator::hydrate(array $data, ?int $fallbackConnectedRealmId = null): Realm accepts an optional fallback ID so member realms preserve their canonical connectedRealmId relation without modifying domain immutability.
+
+3. Dynamic Namespace Reuse:
+   - Queries /data/wow/connected-realm/{id} using BlizzardApiEndpointResolver::resolveDynamicNamespace($region) (e.g., dynamic-eu).
+
+4. Strict Validation & Clean Exception Boundaries:
+   - Enforces $id > 0 before executing network calls.
+   - Yields ResourceNotFoundException(resourceType: 'connected-realm', identifier: '{region}:{id}') on 404.
+
+5. PSR-6 Cache Key Strategy:
+   - Cache key format: uw.cr.{region}.{hash48} (e.g., uw.cr.eu.abc... <= 64 chars).
+   - Default TTL: 86400 seconds (24 hours).
+
+6. Explicit Locale Contract at Repository Boundary:
+   - Repository contract requires explicit non-null Locale parameter (ConnectedRealmRepositoryInterface::getById(Region $region, int $id, Locale $locale)).
+   - Public ConnectedRealmService resolves client configuration defaults before invoking repository.
+
+7. Deferred Capabilities (YAGNI/KISS):
+   - Connected Realm Search and Connected Realm Index endpoints deferred (not required for direct ID-to-cluster resolution).
+   - Volatile operational fields (status, population, has_queue) omitted to maintain cluster stability and high cacheability.
+
 18. Decisions Summary
 
 DECIDED NOW
@@ -753,11 +789,11 @@ Formatter: PHP-CS-Fixer (.php-cs-fixer.dist.php)
 
 Static Analysis: PHPStan Level 9
 
-Scope: Character Profile, Realm Data, and Item Data Vertical Slices (Milestones 0, 1, 2, 3, 4 completed)
+Scope: Character Profile, Realm Data, Item Data, and Connected Realm Vertical Slices (Milestones 0 through 5 completed)
 
-API Parameter Naming: Canonical $realmSlug for slug inputs in Character APIs; $slug in Realm APIs; $id for numeric Item ID inputs
+API Parameter Naming: Canonical $realmSlug for slug inputs in Character APIs; $slug in Realm APIs; $id for numeric Item and Connected Realm ID inputs
 
-Service Memoization: Domain services memoized on UncannyWoWClient facade ($wow->characters(), $wow->realms(), $wow->items())
+Service Memoization: Domain services memoized on UncannyWoWClient facade ($wow->characters(), $wow->realms(), $wow->items(), $wow->connectedRealms())
 
 Namespace Support: Profile (profile-{region}), Dynamic (dynamic-{region}), and Static (static-{region}) namespaces
 
@@ -769,7 +805,7 @@ Secondary Data Providers
 
 Additional WoW Domain APIs (Guilds, Auction House, Mythic+)
 
-Full Connected Realm Aggregate (deferred until Auction House requirements)
+Connected Realm Search & Index Endpoints (direct ID lookup satisfies Auction House foundation)
 
 Realm Index Endpoint (Search API satisfies discovery)
 
@@ -783,4 +819,4 @@ Monorepo Sub-Package Splitting
 
 19. Final Recommendation
 
-This architecture freezes the foundational decisions through Milestone 4. It establishes credential security rules, isolates OAuth endpoint resolution, enforces pragmatic domain modeling, and incorporates the findings of the Milestone 2 Architecture Review, Milestone 3 Realm vertical slice, and Milestone 4 Item Data vertical slice.
+This architecture freezes the foundational decisions through Milestone 5. It establishes credential security rules, isolates OAuth endpoint resolution, enforces pragmatic domain modeling, and incorporates the findings of the Milestone 2 Architecture Review, Milestone 3 Realm vertical slice, Milestone 4 Item Data vertical slice, and Milestone 5 Connected Realm vertical slice.
