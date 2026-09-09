@@ -17,9 +17,9 @@ class BlizzardCharacterRepository implements CharacterRepositoryInterface
         private readonly CharacterProfileHydrator $hydrator,
     ) {}
 
-    public function findProfile(Region $region, string $realm, string $name): CharacterProfile
+    public function findProfile(Region $region, string $realmSlug, string $name): CharacterProfile
     {
-        $normalizedRealm = mb_strtolower(trim($realm), 'UTF-8');
+        $normalizedRealm = mb_strtolower(trim($realmSlug), 'UTF-8');
         $normalizedName = mb_strtolower(trim($name), 'UTF-8');
 
         if ($normalizedRealm === '') {

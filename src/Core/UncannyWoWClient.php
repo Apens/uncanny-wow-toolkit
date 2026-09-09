@@ -21,6 +21,8 @@ use UncannyWoW\Provider\Blizzard\Repository\CachedCharacterRepository;
 
 class UncannyWoWClient
 {
+    private ?CharacterService $characterService = null;
+
     public function __construct(
         private readonly CharacterRepositoryInterface $characterRepository,
         private readonly ClientConfiguration $config,
@@ -95,6 +97,6 @@ class UncannyWoWClient
 
     public function characters(): CharacterService
     {
-        return new CharacterService($this->characterRepository, $this->config);
+        return $this->characterService ??= new CharacterService($this->characterRepository, $this->config);
     }
 }

@@ -13,22 +13,35 @@ The project is currently in early development.
 
 Quick start
 
-The public API is still being designed, but the goal is to make common operations simple and expressive:
+```php
+use Nyholm\Psr7\Factory\Psr17Factory;
+use Symfony\Component\HttpClient\Psr18Client;
+use UncannyWoW\Core\Domain\Enum\Region;
+use UncannyWoW\Core\UncannyWoWClient;
 
-<?php
+$psr17Factory = new Psr17Factory();
+$httpClient = new Psr18Client();
 
-use UncannyWoW\Blizzard\BlizzardClient;
+$wow = UncannyWoWClient::create(
+    clientId: 'my-blizzard-client-id',
+    clientSecret: 'my-blizzard-client-secret',
+    httpClient: $httpClient,
+    requestFactory: $psr17Factory,
+    streamFactory: $psr17Factory,
+    defaultRegion: Region::EU,
+);
 
-$client = new BlizzardClient(/* configuration */);
-
-$character = $client->characters()->profile(
-    realm: 'la-croisade-ecarlate',
+$character = $wow->characters()->profile(
+    realmSlug: 'la-croisade-écarlate',
     name: 'norigosa',
 );
 
-echo $character->name();
-
-The final API may evolve while the project is under active development.
+echo $character->name;                // "Norigosa"
+echo $character->level;               // 80
+echo $character->realm->name;         // "La Croisade écarlate"
+echo $character->playableClass->name; // "Mage"
+echo $character->faction->value;      // "HORDE"
+```
 
 Goals
 

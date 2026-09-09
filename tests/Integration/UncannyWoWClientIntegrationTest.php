@@ -47,7 +47,7 @@ final class UncannyWoWClientIntegrationTest extends TestCase
         );
 
         $character = $wow->characters()->profile(
-            realm: 'la-croisade-ecarlate',
+            realmSlug: 'la-croisade-ecarlate',
             name: 'norigosa',
         );
 
@@ -59,6 +59,23 @@ final class UncannyWoWClientIntegrationTest extends TestCase
         self::assertSame('La Croisade écarlate', $character->realm->name);
         self::assertSame('Mage', $character->playableClass->name);
         self::assertSame(Faction::HORDE, $character->faction);
+    }
+
+    public function testCharactersReturnsSameInstance(): void
+    {
+        $factory = new Psr17Factory();
+        $httpClient = $this->createStub(ClientInterface::class);
+
+        $wow = UncannyWoWClient::create(
+            clientId: 'integration-client-id',
+            clientSecret: 'integration-client-secret',
+            httpClient: $httpClient,
+            requestFactory: $factory,
+            streamFactory: $factory,
+            defaultRegion: Region::EU,
+        );
+
+        self::assertSame($wow->characters(), $wow->characters());
     }
 
     public function testSensitiveParameterAttributeOnClientCreate(): void
