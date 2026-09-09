@@ -14,7 +14,7 @@ The Uncanny-WoW Toolkit (uncanny-wow/toolkit) is a standalone, domain-oriented P
 Application developers consume high-level domain concepts (CharacterProfile, Realm, Faction) through a clean, fluent entry point:
 
 $character = $wow->characters()->profile(
-    realm: 'la-croisade-ecarlate',
+    realmSlug: 'la-croisade-écarlate',
     name: 'norigosa'
 );
 
@@ -336,7 +336,7 @@ $wow = UncannyWoWClient::create(
 );
 
 $character = $wow->characters()->profile(
-    realm: 'la-croisade-ecarlate',
+    realmSlug: 'la-croisade-écarlate',
     name: 'norigosa'
 );
 
@@ -349,7 +349,7 @@ echo $character->playableClass->name; // provider-derived class name
 
 [ Application Code ]
        |
-       | 1. Calls ->profile(realm: 'la-croisade-ecarlate', name: 'norigosa')
+       | 1. Calls ->profile(realmSlug: 'la-croisade-écarlate', name: 'norigosa')
        v
 [ UncannyWoWClient Facade ]
        |
@@ -675,23 +675,29 @@ Implement PHPUnit test suite covering 200, 404, 429, 5xx, and OAuth token expira
 
 Milestone 2 - Mandatory Architecture Review
 
+Status: COMPLETED (Verdict: APPROVE WITH MINOR REFACTORING)
+
 Objective: Review architectural fit before expanding to additional domains.
 
-Review Questions:
+Key Findings & Approved Refactoring:
 
-Is the public API ($wow->characters()->profile(...)) intuitive?
+1. Canonical Realm Slug Parameter ($realmSlug):
+   To eliminate ambiguity between human-readable display names (e.g. "La Croisade écarlate") and canonical Blizzard slugs, all public service methods and repository contracts representing realm slugs explicitly name the parameter $realmSlug (e.g., CharacterService::profile(string $realmSlug, ...), CharacterRepositoryInterface::findProfile(Region $region, string $realmSlug, ...)). Domain entities retain $character->realm for the Realm model.
 
-Did PSR-18 and PSR-17 integration remain clean?
+2. Unicode Realm Slug Normalization & URL Encoding:
+   Blizzard canonical realm slugs can contain non-ASCII Unicode characters (e.g. "la-croisade-écarlate"). The toolkit deterministically normalizes realm slugs using mb_strtolower(..., 'UTF-8') and encodes URL path segments via rawurlencode() (producing e.g. /profile/wow/character/la-croisade-%C3%A9carlate/norigosa). Whitespace is strictly disallowed in realm slugs.
 
-Did PSR-6 caching work effectively for both tokens and domain models?
+3. Service Instance Memoization on Client Facade:
+   Domain accessor methods on UncannyWoWClient (e.g., $wow->characters()) memoize the underlying service instance internally using the null-coalescing assignment operator (??=), ensuring that repeated invocations reuse the same service instance rather than creating new objects on every call.
 
-Are exception types and context data useful to consumers?
+4. ClientConfiguration Simplicity Maintained:
+   The single, unified ClientConfiguration is retained for now. Deferring the split into distinct transport, authentication, or profile configurations avoids unnecessary premature abstraction (YAGNI) while the domain footprint remains focused.
 
-Did provider isolation successfully contain Blizzard details?
+5. 100% Offline CI & Live Smoke Testing Separation:
+   Automated test suites and CI workflows remain completely offline, relying on mock PSR-18 HTTP transports and realistic static fixtures. Live API verification against Blizzard endpoints is reserved for manual/local smoke tests with real credentials and is excluded from CI.
 
-Are test fixtures easy to maintain?
-
-Feature expansion (Guilds, Items, Auction House, Mythic+) will proceed ONLY after Milestone 2 approval.
+6. Next Vertical Slice Roadmap:
+   Following this cleanup, the next vertical slice will be Realm lookup ($wow->realms()), providing realm status, slug resolution, and connected realm discovery prior to expanding into Guilds, Items, or Auction House domains.
 
 18. Decisions Summary
 
@@ -711,7 +717,11 @@ Formatter: PHP-CS-Fixer (.php-cs-fixer.dist.php)
 
 Static Analysis: PHPStan Level 9
 
-Scope: Character Profile Vertical Slice
+Scope: Character Profile Vertical Slice (Milestone 1 completed, Milestone 2 review approved)
+
+API Parameter Naming: Canonical $realmSlug for slug inputs across services and repositories
+
+Service Memoization: Domain services memoized on UncannyWoWClient facade
 
 DEFERRED
 
@@ -721,10 +731,12 @@ Secondary Data Providers
 
 Additional WoW Domain APIs (Guilds, Items, Auction House, Mythic+)
 
+ClientConfiguration Splitting (deferred until additional domain needs emerge)
+
 Monorepo Sub-Package Splitting
 
 19. Final Recommendation
 
-This architecture freezes the foundational decisions for the first implementation phase. It establishes credential security rules, isolates OAuth endpoint resolution, enforces pragmatic domain modeling, and defines the Milestone 0 -> Milestone 1 -> Milestone 2 execution plan.
+This architecture freezes the foundational decisions for the first implementation phase. It establishes credential security rules, isolates OAuth endpoint resolution, enforces pragmatic domain modeling, and incorporates the findings of the Milestone 2 Architecture Review.
 
-Changes to these foundational decisions should be deliberate and documented. Implementation proceeds with Milestone 0.
+Implementation of future slices will proceed with Realm lookup.

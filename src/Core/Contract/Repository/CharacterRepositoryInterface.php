@@ -9,5 +9,5 @@ use UncannyWoW\Core\Domain\Model\Character\CharacterProfile;
 
 interface CharacterRepositoryInterface
 {
-    public function findProfile(Region $region, string $realm, string $name): CharacterProfile;
+    public function findProfile(Region $region, string $realmSlug, string $name): CharacterProfile;
 }

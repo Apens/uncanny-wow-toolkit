@@ -17,13 +17,13 @@ class CachedCharacterRepository implements CharacterRepositoryInterface
         private readonly int $defaultTtlSeconds = 900,
     ) {}
 
-    public function findProfile(Region $region, string $realm, string $name): CharacterProfile
+    public function findProfile(Region $region, string $realmSlug, string $name): CharacterProfile
     {
         if ($this->cachePool === null) {
-            return $this->innerRepository->findProfile($region, $realm, $name);
+            return $this->innerRepository->findProfile($region, $realmSlug, $name);
         }
 
-        $cacheKey = $this->buildCacheKey($region, $realm, $name);
+        $cacheKey = $this->buildCacheKey($region, $realmSlug, $name);
         $cacheItem = $this->cachePool->getItem($cacheKey);
 
         if ($cacheItem->isHit()) {
@@ -32,7 +32,7 @@ class CachedCharacterRepository implements CharacterRepositoryInterface
             return $cachedProfile;
         }
 
-        $profile = $this->innerRepository->findProfile($region, $realm, $name);
+        $profile = $this->innerRepository->findProfile($region, $realmSlug, $name);
 
         if ($this->defaultTtlSeconds > 0) {
             $cacheItem->set($profile);
@@ -43,9 +43,9 @@ class CachedCharacterRepository implements CharacterRepositoryInterface
         return $profile;
     }
 
-    private function buildCacheKey(Region $region, string $realm, string $name): string
+    private function buildCacheKey(Region $region, string $realmSlug, string $name): string
     {
-        $normalizedRealm = mb_strtolower(trim($realm), 'UTF-8');
+        $normalizedRealm = mb_strtolower(trim($realmSlug), 'UTF-8');
         $normalizedName = mb_strtolower(trim($name), 'UTF-8');
 
         $identity = sprintf('%s:%s:%s', strtolower($region->value), $normalizedRealm, $normalizedName);
