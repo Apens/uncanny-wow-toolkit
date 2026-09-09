@@ -51,6 +51,12 @@ echo $character->level;               // 80
 echo $character->realm->name;         // "La Croisade écarlate"
 echo $character->playableClass->name; // "Mage"
 echo $character->faction->value;      // "HORDE"
+
+// Fetch item metadata by Item ID
+$item = $wow->items()->get(id: 19019);
+echo $item->name;                     // "Lame-tonnerre, épée bénie du Cherchevent"
+echo $item->quality->value;           // "legendary"
+echo $item->level;                    // 29
 ```
 
 Goals
