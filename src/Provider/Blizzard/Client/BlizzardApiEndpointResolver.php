@@ -22,4 +22,9 @@ final class BlizzardApiEndpointResolver
     {
         return sprintf('dynamic-%s', $region->value);
     }
+
+    public static function resolveStaticNamespace(Region $region): string
+    {
+        return sprintf('static-%s', $region->value);
+    }
 }

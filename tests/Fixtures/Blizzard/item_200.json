@@ -1,0 +1,44 @@
+{
+  "_links": {
+    "self": {
+      "href": "https://eu.api.blizzard.com/data/wow/item/19019?namespace=static-eu"
+    }
+  },
+  "id": 19019,
+  "name": "Lame-tonnerre, \u00e9p\u00e9e b\u00e9nie du Cherchevent",
+  "quality": {
+    "type": "LEGENDARY",
+    "name": "L\u00e9gendaire"
+  },
+  "level": 29,
+  "required_level": 25,
+  "media": {
+    "key": {
+      "href": "https://eu.api.blizzard.com/data/wow/media/item/19019?namespace=static-eu"
+    },
+    "id": 19019
+  },
+  "item_class": {
+    "key": {
+      "href": "https://eu.api.blizzard.com/data/wow/item-class/2?namespace=static-eu"
+    },
+    "name": "Arme",
+    "id": 2
+  },
+  "item_subclass": {
+    "key": {
+      "href": "https://eu.api.blizzard.com/data/wow/item-class/2/item-subclass/7?namespace=static-eu"
+    },
+    "name": "\u00c9p\u00e9e",
+    "id": 7
+  },
+  "inventory_type": {
+    "type": "WEAPON",
+    "name": "\u00c0 une main"
+  },
+  "purchase_price": 402283,
+  "sell_price": 80456,
+  "max_count": 1,
+  "is_equippable": true,
+  "is_stackable": false
+}

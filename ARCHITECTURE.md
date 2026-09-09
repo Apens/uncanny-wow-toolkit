@@ -753,13 +753,13 @@ Formatter: PHP-CS-Fixer (.php-cs-fixer.dist.php)
 
 Static Analysis: PHPStan Level 9
 
-Scope: Character Profile & Realm Data Vertical Slices (Milestones 0, 1, 2, 3 completed)
+Scope: Character Profile, Realm Data, and Item Data Vertical Slices (Milestones 0, 1, 2, 3, 4 completed)
 
-API Parameter Naming: Canonical $realmSlug for slug inputs in Character APIs; $slug in Realm APIs
+API Parameter Naming: Canonical $realmSlug for slug inputs in Character APIs; $slug in Realm APIs; $id for numeric Item ID inputs
 
-Service Memoization: Domain services memoized on UncannyWoWClient facade ($wow->characters(), $wow->realms())
+Service Memoization: Domain services memoized on UncannyWoWClient facade ($wow->characters(), $wow->realms(), $wow->items())
 
-Namespace Support: Profile (profile-{region}) and Dynamic (dynamic-{region}) namespaces
+Namespace Support: Profile (profile-{region}), Dynamic (dynamic-{region}), and Static (static-{region}) namespaces
 
 DEFERRED
 
@@ -767,11 +767,15 @@ Symfony Bridge (UncannyWoW\Bridge\Symfony)
 
 Secondary Data Providers
 
-Additional WoW Domain APIs (Guilds, Items, Auction House, Mythic+)
+Additional WoW Domain APIs (Guilds, Auction House, Mythic+)
 
 Full Connected Realm Aggregate (deferred until Auction House requirements)
 
 Realm Index Endpoint (Search API satisfies discovery)
+
+Item Media Endpoint (avoiding redundant secondary HTTP requests during item lookup)
+
+Item Search Endpoint (Item ID to metadata resolution satisfies requirements)
 
 ClientConfiguration Splitting (deferred until additional domain needs emerge)
 
@@ -779,4 +783,4 @@ Monorepo Sub-Package Splitting
 
 19. Final Recommendation
 
-This architecture freezes the foundational decisions through Milestone 3. It establishes credential security rules, isolates OAuth endpoint resolution, enforces pragmatic domain modeling, and incorporates the findings of the Milestone 2 Architecture Review and Milestone 3 Realm vertical slice.
+This architecture freezes the foundational decisions through Milestone 4. It establishes credential security rules, isolates OAuth endpoint resolution, enforces pragmatic domain modeling, and incorporates the findings of the Milestone 2 Architecture Review, Milestone 3 Realm vertical slice, and Milestone 4 Item Data vertical slice.
