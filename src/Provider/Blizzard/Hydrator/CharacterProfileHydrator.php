@@ -10,7 +10,7 @@ use UncannyWoW\Core\Domain\Exception\InvalidResponseException;
 use UncannyWoW\Core\Domain\Model\Character\CharacterId;
 use UncannyWoW\Core\Domain\Model\Character\CharacterProfile;
 use UncannyWoW\Core\Domain\Model\Character\PlayableClass;
-use UncannyWoW\Core\Domain\Model\Character\Realm;
+use UncannyWoW\Core\Domain\Model\Realm\Realm;
 
 class CharacterProfileHydrator
 {

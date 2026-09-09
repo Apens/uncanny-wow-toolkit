@@ -1,0 +1,28 @@
+{
+  "_links": {
+    "self": {
+      "href": "https://eu.api.blizzard.com/data/wow/realm/la-croisade-%C3%A9carlate?namespace=dynamic-eu"
+    }
+  },
+  "id": 1086,
+  "region": {
+    "key": {
+      "href": "https://eu.api.blizzard.com/data/wow/region/3?namespace=dynamic-eu"
+    },
+    "name": "Europe",
+    "id": 3
+  },
+  "connected_realm": {
+    "href": "https://eu.api.blizzard.com/data/wow/connected-realm/1086?namespace=dynamic-eu"
+  },
+  "name": "La Croisade écarlate",
+  "category": "French",
+  "locale": "frFR",
+  "timezone": "Europe/Paris",
+  "type": {
+    "type": "NORMAL",
+    "name": "Normal"
+  },
+  "is_tournament": false,
+  "slug": "la-croisade-écarlate"
+}

@@ -220,17 +220,20 @@ uncanny-wow-toolkit/
 │   │   │   └── ClientConfiguration.php
 │   │   ├── Contract/
 │   │   │   └── Repository/
-│   │   │       └── CharacterRepositoryInterface.php
+│   │   │       ├── CharacterRepositoryInterface.php
+│   │   │       └── RealmRepositoryInterface.php
 │   │   ├── Domain/
 │   │   │   ├── Enum/
 │   │   │   │   ├── Faction.php
 │   │   │   │   ├── Locale.php
 │   │   │   │   └── Region.php
 │   │   │   ├── Model/
-│   │   │   │   └── Character/
-│   │   │   │       ├── CharacterId.php
-│   │   │   │       ├── CharacterProfile.php
-│   │   │   │       ├── PlayableClass.php
+│   │   │   │   ├── Character/
+│   │   │   │   │   ├── CharacterId.php
+│   │   │   │   │   ├── CharacterProfile.php
+│   │   │   │   │   ├── PlayableClass.php
+│   │   │   │   │   └── Realm.php
+│   │   │   │   └── Realm/
 │   │   │   │       └── Realm.php
 │   │   │   └── Exception/
 │   │   │       ├── AuthenticationException.php
@@ -241,6 +244,9 @@ uncanny-wow-toolkit/
 │   │   │       ├── RateLimitExceededException.php
 │   │   │       ├── ResourceNotFoundException.php
 │   │   │       └── UncannyWoWException.php
+│   │   ├── Service/
+│   │   │   ├── CharacterService.php
+│   │   │   └── RealmService.php
 │   │   └── UncannyWoWClient.php
 │   └── Provider/
 │       └── Blizzard/
@@ -251,10 +257,13 @@ uncanny-wow-toolkit/
 │           │   ├── BlizzardApiClient.php
 │           │   └── BlizzardApiEndpointResolver.php
 │           ├── Hydrator/
-│           │   └── CharacterProfileHydrator.php
+│           │   ├── CharacterProfileHydrator.php
+│           │   └── RealmHydrator.php
 │           └── Repository/
 │               ├── BlizzardCharacterRepository.php
-│               └── CachedCharacterRepository.php
+│               ├── BlizzardRealmRepository.php
+│               ├── CachedCharacterRepository.php
+│               └── CachedRealmRepository.php
 ├── tests/
 │   ├── Fixtures/
 │   │   └── Blizzard/
@@ -696,8 +705,35 @@ Key Findings & Approved Refactoring:
 5. 100% Offline CI & Live Smoke Testing Separation:
    Automated test suites and CI workflows remain completely offline, relying on mock PSR-18 HTTP transports and realistic static fixtures. Live API verification against Blizzard endpoints is reserved for manual/local smoke tests with real credentials and is excluded from CI.
 
-6. Next Vertical Slice Roadmap:
-   Following this cleanup, the next vertical slice will be Realm lookup ($wow->realms()), providing realm status, slug resolution, and connected realm discovery prior to expanding into Guilds, Items, or Auction House domains.
+6. Milestone 3 Roadmap Execution:
+   The Realm vertical slice ($wow->realms()) implements canonical realm retrieval and discovery, dynamic-{region} namespace handling, and lightweight connected realm reference identification.
+
+Milestone 3 - Realm Data & Realm Lookup Vertical Slice
+
+Status: COMPLETED
+
+Objective: Deliver typed Realm data and explicit realm discovery to solve the canonical slug dependency exposed by Character Profile.
+
+Key Architectural Decisions Validated:
+
+1. Dual Access Patterns (Get by Slug vs. Search Discovery):
+   - Direct lookup by canonical slug: $wow->realms()->get(slug: 'la-croisade-écarlate')
+   - Discovery by human-readable display name: $wow->realms()->search(name: 'La Croisade écarlate')
+   Both return strongly typed Realm domain objects, preventing homemade slug guesswork or heuristic matching in consuming applications.
+
+2. Dynamic Namespace Integration:
+   Game Data endpoints require dynamic-{region} namespaces (e.g. dynamic-eu). Resolved cleanly via BlizzardApiEndpointResolver::resolveDynamicNamespace($region) without introducing custom transport abstractions.
+
+3. Pragmatic Connected Realm Identification:
+   Preserves a minimal ?int $connectedRealmId reference extracted from connected_realm.href without constructing speculative ConnectedRealm aggregates prematurely.
+
+4. Deferred Realm Index Endpoint:
+   The official Blizzard Realm Search API (/data/wow/search/realm) satisfies explicit discovery requirements directly. The Realm Index endpoint is deferred (YAGNI/KISS).
+
+5. Cache Key Max Portability (PSR-6):
+   - Slug lookup key: uw.realm.{region}.{hash48} (60 chars)
+   - Search query key: uw.rs.{region}.{hash48} (57 chars)
+   Both stay strictly <= 64 characters, use safe [a-z0-9_.] characters, and contain zero credentials.
 
 18. Decisions Summary
 
@@ -717,11 +753,13 @@ Formatter: PHP-CS-Fixer (.php-cs-fixer.dist.php)
 
 Static Analysis: PHPStan Level 9
 
-Scope: Character Profile Vertical Slice (Milestone 1 completed, Milestone 2 review approved)
+Scope: Character Profile & Realm Data Vertical Slices (Milestones 0, 1, 2, 3 completed)
 
-API Parameter Naming: Canonical $realmSlug for slug inputs across services and repositories
+API Parameter Naming: Canonical $realmSlug for slug inputs in Character APIs; $slug in Realm APIs
 
-Service Memoization: Domain services memoized on UncannyWoWClient facade
+Service Memoization: Domain services memoized on UncannyWoWClient facade ($wow->characters(), $wow->realms())
+
+Namespace Support: Profile (profile-{region}) and Dynamic (dynamic-{region}) namespaces
 
 DEFERRED
 
@@ -731,12 +769,14 @@ Secondary Data Providers
 
 Additional WoW Domain APIs (Guilds, Items, Auction House, Mythic+)
 
+Full Connected Realm Aggregate (deferred until Auction House requirements)
+
+Realm Index Endpoint (Search API satisfies discovery)
+
 ClientConfiguration Splitting (deferred until additional domain needs emerge)
 
 Monorepo Sub-Package Splitting
 
 19. Final Recommendation
 
-This architecture freezes the foundational decisions for the first implementation phase. It establishes credential security rules, isolates OAuth endpoint resolution, enforces pragmatic domain modeling, and incorporates the findings of the Milestone 2 Architecture Review.
-
-Implementation of future slices will proceed with Realm lookup.
+This architecture freezes the foundational decisions through Milestone 3. It establishes credential security rules, isolates OAuth endpoint resolution, enforces pragmatic domain modeling, and incorporates the findings of the Milestone 2 Architecture Review and Milestone 3 Realm vertical slice.

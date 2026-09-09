@@ -31,8 +31,18 @@ $wow = UncannyWoWClient::create(
     defaultRegion: Region::EU,
 );
 
+// Discover a realm and its canonical slug by display name
+$matches = $wow->realms()->search(name: 'La Croisade écarlate');
+$realm = $matches[0];
+echo $realm->slug;                    // "la-croisade-écarlate"
+
+// Or fetch realm details directly by canonical slug
+$realm = $wow->realms()->get(slug: 'la-croisade-écarlate');
+echo $realm->name;                    // "La Croisade écarlate"
+echo $realm->timezone;                // "Europe/Paris"
+
 $character = $wow->characters()->profile(
-    realmSlug: 'la-croisade-écarlate',
+    realmSlug: $realm->slug,
     name: 'norigosa',
 );
 
