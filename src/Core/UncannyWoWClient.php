@@ -20,6 +20,7 @@ use UncannyWoW\Core\Domain\Exception\ConfigurationException;
 use UncannyWoW\Core\Service\AuctionHouseService;
 use UncannyWoW\Core\Service\CharacterService;
 use UncannyWoW\Core\Service\ConnectedRealmService;
+use UncannyWoW\Core\Service\EconomyService;
 use UncannyWoW\Core\Service\ItemService;
 use UncannyWoW\Core\Service\RealmService;
 use UncannyWoW\Provider\Blizzard\Auth\OAuthTokenProvider;
@@ -46,6 +47,7 @@ class UncannyWoWClient
     private ?ItemService $itemService = null;
     private ?ConnectedRealmService $connectedRealmService = null;
     private ?AuctionHouseService $auctionHouseService = null;
+    private ?EconomyService $economyService = null;
 
     public function __construct(
         private readonly CharacterRepositoryInterface $characterRepository,
@@ -199,5 +201,10 @@ class UncannyWoWClient
         }
 
         return $this->auctionHouseService ??= new AuctionHouseService($this->auctionHouseRepository, $this->config);
+    }
+
+    public function economy(): EconomyService
+    {
+        return $this->economyService ??= new EconomyService($this->auctionHouse(), $this->config);
     }
 }

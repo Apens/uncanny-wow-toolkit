@@ -88,6 +88,30 @@ foreach ($commoditySnapshot as $commodity) {
 // Note: Auction House snapshots are streamed and strictly single-pass to maintain
 // a flat ~6 MB memory footprint even on payloads with 370,000+ listings.
 // Attempting to iterate a snapshot a second time will throw a \LogicException.
+
+// Fetch aggregated commodity market data (summarized in one streaming pass)
+$commodityMarket = $wow->economy()->commodities();
+$summary = $commodityMarket->get(190381);
+if ($summary !== null) {
+    echo $summary->totalQuantity;         // Total units on regional market
+    echo $summary->lowestUnitPriceCopper; // e.g. 12500 copper
+    echo $summary->highestUnitPriceCopper;
+    foreach ($summary->priceLevels as $level) {
+        echo sprintf("%d copper: %d units across %d listings\n", $level->priceCopper, $level->quantity, $level->listingCount);
+    }
+}
+
+// Fetch aggregated connected realm market data (variant-aware non-commodities)
+$realmMarket = $wow->economy()->connectedRealm(connectedRealmId: 1127);
+$thunderfurySummaries = $realmMarket->getByItemId(19019);
+foreach ($thunderfurySummaries as $itemSummary) {
+    echo $itemSummary->lowestBuyoutCopper;
+    echo $itemSummary->totalQuantity;
+}
+
+// Note: Economy aggregation scales with unique market item cardinality and retained price depth (1..10, default 5).
+// Live validation on 381k+ regional commodities (11.9k unique items) peaked at ~100 MB,
+// and 41k+ connected realm listings (25.7k unique variants) peaked at ~88 MB under a standard 256M limit.
 ```
 
 Goals
