@@ -1,0 +1,5 @@
+{
+  "code": 404,
+  "type": "BLZ_NOT_FOUND",
+  "detail": "Not Found"
+}

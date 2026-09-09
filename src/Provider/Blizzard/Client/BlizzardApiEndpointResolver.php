@@ -17,4 +17,9 @@ final class BlizzardApiEndpointResolver
     {
         return sprintf('profile-%s', $region->value);
     }
+
+    public static function resolveDynamicNamespace(Region $region): string
+    {
+        return sprintf('dynamic-%s', $region->value);
+    }
 }

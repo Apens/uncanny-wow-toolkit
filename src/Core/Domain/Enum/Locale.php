@@ -11,6 +11,7 @@ enum Locale: string
     case FR_FR = 'fr_FR';
     case DE_DE = 'de_DE';
     case ES_ES = 'es_ES';
+    case ES_MX = 'es_MX';
     case IT_IT = 'it_IT';
     case RU_RU = 'ru_RU';
     case PT_BR = 'pt_BR';

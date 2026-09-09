@@ -1,0 +1,42 @@
+{
+  "page": 1,
+  "pageSize": 100,
+  "maxPageSize": 100,
+  "pageCount": 1,
+  "results": [
+    {
+      "key": {
+        "href": "https://eu.api.blizzard.com/data/wow/realm/1086?namespace=dynamic-eu"
+      },
+      "data": {
+        "is_tournament": false,
+        "timezone": "Europe/Paris",
+        "name": {
+          "fr_FR": "La Croisade écarlate",
+          "en_US": "Scarlet Crusade"
+        },
+        "id": 1086,
+        "region": {
+          "name": {
+            "en_US": "Europe"
+          },
+          "id": 3
+        },
+        "connected_realm": {
+          "href": "https://eu.api.blizzard.com/data/wow/connected-realm/1086?namespace=dynamic-eu"
+        },
+        "category": {
+          "fr_FR": "French"
+        },
+        "locale": "frFR",
+        "type": {
+          "name": {
+            "fr_FR": "Normal"
+          },
+          "type": "NORMAL"
+        },
+        "slug": "la-croisade-écarlate"
+      }
+    }
+  ]
+}

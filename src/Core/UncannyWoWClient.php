@@ -10,22 +10,30 @@ use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use UncannyWoW\Core\Config\ClientConfiguration;
 use UncannyWoW\Core\Contract\Repository\CharacterRepositoryInterface;
+use UncannyWoW\Core\Contract\Repository\RealmRepositoryInterface;
 use UncannyWoW\Core\Domain\Enum\Locale;
 use UncannyWoW\Core\Domain\Enum\Region;
+use UncannyWoW\Core\Domain\Exception\ConfigurationException;
 use UncannyWoW\Core\Service\CharacterService;
+use UncannyWoW\Core\Service\RealmService;
 use UncannyWoW\Provider\Blizzard\Auth\OAuthTokenProvider;
 use UncannyWoW\Provider\Blizzard\Client\BlizzardApiClient;
 use UncannyWoW\Provider\Blizzard\Hydrator\CharacterProfileHydrator;
+use UncannyWoW\Provider\Blizzard\Hydrator\RealmHydrator;
 use UncannyWoW\Provider\Blizzard\Repository\BlizzardCharacterRepository;
+use UncannyWoW\Provider\Blizzard\Repository\BlizzardRealmRepository;
 use UncannyWoW\Provider\Blizzard\Repository\CachedCharacterRepository;
+use UncannyWoW\Provider\Blizzard\Repository\CachedRealmRepository;
 
 class UncannyWoWClient
 {
     private ?CharacterService $characterService = null;
+    private ?RealmService $realmService = null;
 
     public function __construct(
         private readonly CharacterRepositoryInterface $characterRepository,
         private readonly ClientConfiguration $config,
+        private readonly ?RealmRepositoryInterface $realmRepository = null,
     ) {}
 
     public static function create(
@@ -92,11 +100,29 @@ class UncannyWoWClient
             defaultTtlSeconds: $config->defaultProfileTtlSeconds,
         );
 
-        return new self($cachedRepository, $config);
+        $realmHydrator = new RealmHydrator();
+        $blizzardRealmRepository = new BlizzardRealmRepository($apiClient, $realmHydrator, $config);
+
+        $cachedRealmRepository = new CachedRealmRepository(
+            innerRepository: $blizzardRealmRepository,
+            cachePool: $cachePool,
+            defaultTtlSeconds: 86400,
+        );
+
+        return new self($cachedRepository, $config, $cachedRealmRepository);
     }
 
     public function characters(): CharacterService
     {
         return $this->characterService ??= new CharacterService($this->characterRepository, $this->config);
+    }
+
+    public function realms(): RealmService
+    {
+        if ($this->realmRepository === null) {
+            throw new ConfigurationException('Realm repository is not configured on this client.');
+        }
+
+        return $this->realmService ??= new RealmService($this->realmRepository, $this->config);
     }
 }

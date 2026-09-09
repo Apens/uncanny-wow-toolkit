@@ -36,6 +36,7 @@ class BlizzardApiClient
         string $path,
         array $queryParams = [],
         ?Locale $locale = null,
+        ?string $namespace = null,
         ?string $resourceTypeForNotFound = null,
         ?string $identifierForNotFound = null,
     ): array {
@@ -43,7 +44,7 @@ class BlizzardApiClient
         $host = BlizzardApiEndpointResolver::resolveHost($region);
 
         $mergedQueryParams = array_merge([
-            'namespace' => BlizzardApiEndpointResolver::resolveProfileNamespace($region),
+            'namespace' => $namespace ?? BlizzardApiEndpointResolver::resolveProfileNamespace($region),
             'locale' => ($locale ?? $this->config->defaultLocale)->value,
         ], $queryParams);
 
