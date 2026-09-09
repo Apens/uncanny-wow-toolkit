@@ -33,7 +33,7 @@ class RealmHydrator
      *
      * @param array<string, mixed> $data
      */
-    public function hydrate(array $data): Realm
+    public function hydrate(array $data, ?int $fallbackConnectedRealmId = null): Realm
     {
         if (!isset($data['id']) || !is_int($data['id'])) {
             throw new InvalidResponseException('Missing or invalid "id" in realm payload.');
@@ -52,7 +52,7 @@ class RealmHydrator
         $locale = $this->normalizeLocale($rawLocale);
         $timezone = isset($data['timezone']) && is_string($data['timezone']) ? $data['timezone'] : null;
 
-        $connectedRealmId = null;
+        $connectedRealmId = $fallbackConnectedRealmId;
         if (isset($data['connected_realm']) && is_array($data['connected_realm']) && isset($data['connected_realm']['href']) && is_string($data['connected_realm']['href'])) {
             if (preg_match('#/connected-realm/(\d+)#', $data['connected_realm']['href'], $matches) === 1) {
                 $connectedRealmId = (int) $matches[1];

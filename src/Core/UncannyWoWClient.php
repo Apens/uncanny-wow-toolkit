@@ -10,23 +10,28 @@ use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use UncannyWoW\Core\Config\ClientConfiguration;
 use UncannyWoW\Core\Contract\Repository\CharacterRepositoryInterface;
+use UncannyWoW\Core\Contract\Repository\ConnectedRealmRepositoryInterface;
 use UncannyWoW\Core\Contract\Repository\ItemRepositoryInterface;
 use UncannyWoW\Core\Contract\Repository\RealmRepositoryInterface;
 use UncannyWoW\Core\Domain\Enum\Locale;
 use UncannyWoW\Core\Domain\Enum\Region;
 use UncannyWoW\Core\Domain\Exception\ConfigurationException;
 use UncannyWoW\Core\Service\CharacterService;
+use UncannyWoW\Core\Service\ConnectedRealmService;
 use UncannyWoW\Core\Service\ItemService;
 use UncannyWoW\Core\Service\RealmService;
 use UncannyWoW\Provider\Blizzard\Auth\OAuthTokenProvider;
 use UncannyWoW\Provider\Blizzard\Client\BlizzardApiClient;
 use UncannyWoW\Provider\Blizzard\Hydrator\CharacterProfileHydrator;
+use UncannyWoW\Provider\Blizzard\Hydrator\ConnectedRealmHydrator;
 use UncannyWoW\Provider\Blizzard\Hydrator\ItemHydrator;
 use UncannyWoW\Provider\Blizzard\Hydrator\RealmHydrator;
 use UncannyWoW\Provider\Blizzard\Repository\BlizzardCharacterRepository;
+use UncannyWoW\Provider\Blizzard\Repository\BlizzardConnectedRealmRepository;
 use UncannyWoW\Provider\Blizzard\Repository\BlizzardItemRepository;
 use UncannyWoW\Provider\Blizzard\Repository\BlizzardRealmRepository;
 use UncannyWoW\Provider\Blizzard\Repository\CachedCharacterRepository;
+use UncannyWoW\Provider\Blizzard\Repository\CachedConnectedRealmRepository;
 use UncannyWoW\Provider\Blizzard\Repository\CachedItemRepository;
 use UncannyWoW\Provider\Blizzard\Repository\CachedRealmRepository;
 
@@ -35,12 +40,14 @@ class UncannyWoWClient
     private ?CharacterService $characterService = null;
     private ?RealmService $realmService = null;
     private ?ItemService $itemService = null;
+    private ?ConnectedRealmService $connectedRealmService = null;
 
     public function __construct(
         private readonly CharacterRepositoryInterface $characterRepository,
         private readonly ClientConfiguration $config,
         private readonly ?RealmRepositoryInterface $realmRepository = null,
         private readonly ?ItemRepositoryInterface $itemRepository = null,
+        private readonly ?ConnectedRealmRepositoryInterface $connectedRealmRepository = null,
     ) {}
 
     public static function create(
@@ -125,7 +132,16 @@ class UncannyWoWClient
             defaultTtlSeconds: 86400,
         );
 
-        return new self($cachedRepository, $config, $cachedRealmRepository, $cachedItemRepository);
+        $connectedRealmHydrator = new ConnectedRealmHydrator($realmHydrator);
+        $blizzardConnectedRealmRepository = new BlizzardConnectedRealmRepository($apiClient, $connectedRealmHydrator);
+
+        $cachedConnectedRealmRepository = new CachedConnectedRealmRepository(
+            innerRepository: $blizzardConnectedRealmRepository,
+            cachePool: $cachePool,
+            defaultTtlSeconds: 86400,
+        );
+
+        return new self($cachedRepository, $config, $cachedRealmRepository, $cachedItemRepository, $cachedConnectedRealmRepository);
     }
 
     public function characters(): CharacterService
@@ -149,5 +165,14 @@ class UncannyWoWClient
         }
 
         return $this->itemService ??= new ItemService($this->itemRepository, $this->config);
+    }
+
+    public function connectedRealms(): ConnectedRealmService
+    {
+        if ($this->connectedRealmRepository === null) {
+            throw new ConfigurationException('Connected realm repository is not configured on this client.');
+        }
+
+        return $this->connectedRealmService ??= new ConnectedRealmService($this->connectedRealmRepository, $this->config);
     }
 }
