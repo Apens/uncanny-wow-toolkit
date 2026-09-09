@@ -816,9 +816,40 @@ Key Architectural Decisions Validated:
    - `CachedAuctionHouseRepository` has been removed. Applications requiring persistent caching should store raw stream chunks or ingest rows into application storage (e.g., MySQL, Redis, ClickHouse).
 
 9. Deferred Capabilities:
-   - Economy analysis, price history, market trends, min/max/average calculations (deferred to consuming applications or future analytical modules).
+   - Economy analysis, price history, market trends, min/max/average calculations (deferred to Milestone 8 or consuming applications).
 
-19. Decisions Summary
+19. Milestone 7 Decisions (Economy Data Vertical Slice)
+
+1. Separation of Concerns & Service Architecture:
+   - `AuctionHouseService` retrieves raw, streamed, single-pass auction feeds.
+   - `EconomyService` transforms and aggregates streaming data into compact, typed, provider-independent market summaries (`CommodityMarketData`, `ConnectedRealmMarketData`).
+   - Pure domain aggregators (`CommodityMarketAggregator`, `ConnectedRealmMarketAggregator`) process streams on the fly without network or transport coupling.
+
+2. Single-Pass Streaming Aggregation:
+   - Aggregation consumes raw auctions on the fly without loading all listings into memory.
+   - Raw `Auction` and `CommodityAuction` objects fall out of scope and are garbage collected immediately.
+   - Memory scales with unique market identity cardinality and retained price depth, not raw auction count alone.
+   - Validated Live Results (PHP `memory_limit` = 256M):
+     - Connected Realm 1127: 41,076 raw auctions aggregated into 25,768 unique market variants (total quantity: 41,076), peaking at approximately 88 MB.
+     - EU regional commodities: 381,693 raw auctions aggregated across 11,904 unique commodity item IDs (total quantity: 68,869,246), peaking at approximately 100 MB.
+     - Both live feeds completed comfortably within the 256 MB PHP memory limit.
+
+3. Semantic Market Identity:
+   - Commodities are fungible and group strictly by `itemId`.
+   - Non-commodities group by `MarketItemIdentity`, preserving item ID, context, bonus lists in received order, modifiers in received order, and all pet attributes (species, breed, level, quality).
+   - Distinct variants are never collapsed into identical summaries.
+
+4. Exact Integer Price Semantics & Bounded Depth:
+   - Commodity price levels use native integer `priceCopper` (exact Blizzard unit price).
+   - Non-commodity price levels use `NonCommodityPriceLevel`, preserving exact listing `buyoutCopper` and exact `quantityPerListing` (lot size) without lossy division.
+   - Bid-only listings do not pollute buyout price levels.
+   - Retains the lowest $N$ price levels in a single pass without sorting raw auctions: `maxPriceLevels` is hard-bounded to `1..10`, defaulting to `5`.
+   - Naive weighted-average and outlier-sensitive statistics are strictly deferred: real-world EU commodity feeds exhibit extreme high-price listings (up to 499,999,700 copper observed in live validation samples), which would distort simple means and risk 32-bit/64-bit integer overflow without specialized statistical modeling.
+
+5. Zero Secondary API Calls:
+   - Strictly ZERO Item API calls are performed during economy aggregation. Summaries retain `itemId` or `AuctionItem`.
+
+20. Decisions Summary
 
 DECIDED NOW
 
@@ -836,11 +867,11 @@ Formatter: PHP-CS-Fixer (.php-cs-fixer.dist.php)
 
 Static Analysis: PHPStan Level 9
 
-Scope: Character Profile, Realm Data, Item Data, Connected Realm, and Auction House Vertical Slices (Milestones 0 through 6 completed)
+Scope: Character Profile, Realm Data, Item Data, Connected Realm, Auction House, and Economy Data Vertical Slices (Milestones 0 through 7 completed)
 
-API Parameter Naming: Canonical $realmSlug for slug inputs in Character APIs; $slug in Realm APIs; $id for numeric Item and Connected Realm ID inputs; $connectedRealmId for Auction House connected realm inputs
+API Parameter Naming: Canonical $realmSlug for slug inputs in Character APIs; $slug in Realm APIs; $id for numeric Item and Connected Realm ID inputs; $connectedRealmId for Auction House and Economy connected realm inputs
 
-Service Memoization: Domain services memoized on UncannyWoWClient facade ($wow->characters(), $wow->realms(), $wow->items(), $wow->connectedRealms(), $wow->auctionHouse())
+Service Memoization: Domain services memoized on UncannyWoWClient facade ($wow->characters(), $wow->realms(), $wow->items(), $wow->connectedRealms(), $wow->auctionHouse(), $wow->economy())
 
 Namespace Support: Profile (profile-{region}), Dynamic (dynamic-{region}), and Static (static-{region}) namespaces
 
@@ -852,7 +883,7 @@ Secondary Data Providers
 
 Additional WoW Domain APIs (Guilds, Mythic+, Raids)
 
-Auction House Economy & Trend Analysis (min/max/average, market value, price trends)
+Opportunity Analysis (Milestone 8: flip detection, undervalued scoring, buy/sell recommendations, profit calculations)
 
 Connected Realm Search & Index Endpoints (direct ID lookup satisfies Auction House foundation)
 
@@ -866,6 +897,6 @@ ClientConfiguration Splitting (deferred until additional domain needs emerge)
 
 Monorepo Sub-Package Splitting
 
-20. Final Recommendation
+21. Final Recommendation
 
-This architecture freezes the foundational decisions through Milestone 6. It establishes credential security rules, isolates OAuth endpoint resolution, enforces pragmatic domain modeling, and incorporates the findings of the Milestone 2 Architecture Review, Milestone 3 Realm vertical slice, Milestone 4 Item Data vertical slice, Milestone 5 Connected Realm vertical slice, and Milestone 6 Auction House vertical slice.
+This architecture freezes the foundational decisions through Milestone 7. It establishes credential security rules, isolates OAuth endpoint resolution, enforces pragmatic domain modeling, and incorporates the findings of the Milestone 2 Architecture Review, Milestone 3 Realm vertical slice, Milestone 4 Item Data vertical slice, Milestone 5 Connected Realm vertical slice, Milestone 6 Auction House vertical slice, and Milestone 7 Economy Data vertical slice.
