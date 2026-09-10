@@ -22,6 +22,7 @@ use UncannyWoW\Core\Domain\Exception\ConfigurationException;
 use UncannyWoW\Core\Service\AuctionHouseService;
 use UncannyWoW\Core\Service\CharacterService;
 use UncannyWoW\Core\Service\ConnectedRealmService;
+use UncannyWoW\Core\Service\CraftingProfitabilityService;
 use UncannyWoW\Core\Service\EconomyService;
 use UncannyWoW\Core\Service\ItemService;
 use UncannyWoW\Core\Service\OpportunityService;
@@ -62,6 +63,7 @@ class UncannyWoWClient
     private ?OpportunityService $opportunityService = null;
     private ?RecipeService $recipeService = null;
     private ?ProfessionService $professionService = null;
+    private ?CraftingProfitabilityService $craftingProfitabilityService = null;
 
     public function __construct(
         private readonly CharacterRepositoryInterface $characterRepository,
@@ -265,5 +267,10 @@ class UncannyWoWClient
         }
 
         return $this->professionService ??= new ProfessionService($this->professionRepository, $this->config);
+    }
+
+    public function crafting(): CraftingProfitabilityService
+    {
+        return $this->craftingProfitabilityService ??= new CraftingProfitabilityService($this->economy());
     }
 }

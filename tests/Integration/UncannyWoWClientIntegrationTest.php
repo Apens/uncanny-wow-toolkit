@@ -132,6 +132,24 @@ final class UncannyWoWClientIntegrationTest extends TestCase
         self::assertInstanceOf(\UncannyWoW\Core\Service\ProfessionService::class, $wow->professions());
     }
 
+    public function testCraftingServiceMemoization(): void
+    {
+        $factory = new Psr17Factory();
+        $httpClient = $this->createStub(ClientInterface::class);
+
+        $wow = UncannyWoWClient::create(
+            clientId: 'integration-client-id',
+            clientSecret: 'integration-client-secret',
+            httpClient: $httpClient,
+            requestFactory: $factory,
+            streamFactory: $factory,
+            defaultRegion: Region::EU,
+        );
+
+        self::assertSame($wow->crafting(), $wow->crafting());
+        self::assertInstanceOf(\UncannyWoW\Core\Service\CraftingProfitabilityService::class, $wow->crafting());
+    }
+
     public function testSensitiveParameterAttributeOnClientCreate(): void
     {
         $method = new \ReflectionMethod(UncannyWoWClient::class, 'create');

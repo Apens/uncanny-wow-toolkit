@@ -930,7 +930,31 @@ Key Architectural Decisions Validated:
 - Caching:
   - Standard PSR-6 caching in `CachedRecipeRepository` (prefix `uw.recipe.`) and `CachedProfessionRepository` (prefixes `uw.profession.` and `uw.skilltier.`) with 24h default TTL.
 
-22. Decisions Summary
+22. Milestone 9B - Crafting Profitability Architecture
+
+- Principles:
+  - Read-only economic analysis engine for ONE explicit craft execution.
+  - Consumes caller-supplied `CraftPlan`, caller-supplied `CrafterState` effective expectations, and optional materialized market snapshots.
+  - Zero Blizzard data reconstruction: `CraftPlan` is caller-authoritative. Modern Midnight recipe payloads omit crafted items and quantities.
+- Domain Math:
+  - `ExactFraction`: Small, auditable, exact signed rational arithmetic in 64-bit integer domain (rejects `PHP_INT_MIN`, avoids float/BCMath/GMP).
+  - Cross-cancelling multiplication and Euclidean continued-fraction quotient/remainder comparison prevent integer overflow.
+  - `CraftingRoi`: Preserves exact rational ratio internally; `toBasisPoints()` applies signed truncation toward zero via `SafeIntegerMath::mulDivFloor()`.
+- Economic Models:
+  - Side-by-side reporting: `BaseCraftingEconomics` (0 procs) and `ExpectedCraftingEconomics` (accounting for crafter stats).
+  - Resourcefulness: Valued via **Average Acquisition Cost Basis** as an accounting allocation (`expectedSavedQuantity * (fullCost / requiredQuantity)`).
+  - Sale Fee: Base fee uses ceiling rounding via `AuctionHouseFeePolicy`; expected fee models rational rate (`cutBasisPoints / 10000`).
+  - Output Resolution: `CurrentLowestAsk` requires unambiguous single-item lot supply (`quantityPerListing === 1`) for non-commodity items; mixed/multi-quantity lowest price buckets return `AmbiguousNonCommodityLot`.
+- Service Orchestration:
+  - Pure `evaluate()`: Zero network, zero cache, zero I/O. Accepts optional materialized market snapshots.
+  - Networked `evaluateCurrentMarket()`: Invokes `EconomyService::commodities()` at most once and `EconomyService::connectedRealm()` at most once per analysis. Shares single market instance across output and reagents.
+- Live Engine Validation:
+  - Validated against real EU regional commodity market data using a synthetic market-backed CraftPlan (recipeId = null).
+  - Evaluated 5 Mycobloom (210796) at 142,500 copper acquisition cost to craft 2 Algari Mana Potion (212241) at 67,500 copper unit ask.
+  - Demonstrated exact signed base economics (profit: -14,250 copper, ROI: -10.00%) and expected economics with synthetic procs (profit: +38,475/2 copper, ROI: +15.00%, profit per net concentration: 7,695/14 copper).
+  - Informational performance: market fetch ~32.129 s, economic analysis ~5.223 ms, peak memory ~44.05 MB under 256 MB. Not an in-game recipe claim; quantities and expectations were synthetic.
+
+23. Decisions Summary
 
 DECIDED NOW
 
@@ -948,7 +972,7 @@ Formatter: PHP-CS-Fixer (.php-cs-fixer.dist.php)
 
 Static Analysis: PHPStan Level 9
 
-Scope: Character Profile, Realm Data, Item Data, Connected Realm, Auction House, Economy Data, Opportunity Analysis, and Profession & Recipe Data (Milestones 0 through 9A completed)
+Scope: Character Profile, Realm Data, Item Data, Connected Realm, Auction House, Economy Data, Opportunity Analysis, Profession & Recipe Data, and Crafting Profitability Analysis (Milestones 0 through 9B completed)
 
 API Parameter Naming: Canonical $realmSlug for slug inputs in Character APIs; $slug in Realm APIs; $id for numeric Item, Recipe, Profession, and Connected Realm ID inputs; $connectedRealmId for Auction House, Economy, and Opportunity connected realm inputs; $professionId and $skillTierId for skill tier lookups
 
