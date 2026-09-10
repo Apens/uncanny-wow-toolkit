@@ -112,6 +112,32 @@ foreach ($thunderfurySummaries as $itemSummary) {
 // Note: Economy aggregation scales with unique market item cardinality and retained price depth (1..10, default 5).
 // Live validation on 381k+ regional commodities (11.9k unique items) peaked at ~100 MB,
 // and 41k+ connected realm listings (25.7k unique variants) peaked at ~88 MB under a standard 256M limit.
+
+// Analyze structural opportunity candidates lazily (Milestone 8)
+// Computes exact integer-safe price spreads, conservative 5% AH fee deduction, and exact ROI.
+$commodityOpps = $wow->opportunities()->commodities();
+foreach ($commodityOpps as $opp) {
+    echo sprintf(
+        "Item: %d | Clear %d units for %s c | Target: %s c | Net Profit: %s c | ROI: %.2f%%\n",
+        $opp->itemId,
+        $opp->acquisitionQuantity,
+        number_format($opp->acquisitionCostCopper),
+        number_format($opp->targetUnitPriceCopper),
+        number_format($opp->prospectiveProfitCopper),
+        $opp->roi->toBasisPoints() / 100,
+    );
+    break; // Pure generator stream with O(1) memory
+}
+
+// Dedicated sorting and non-overlapping strategy deduplication
+$bestNonCommodities = $wow->opportunities()
+    ->connectedRealm(1127)
+    ->distinctByHighestProfit(); // O(U) memory: exactly 1 non-overlapping candidate per variant
+
+// Note: Structural opportunity analysis reflects observed snapshot spreads and prospective resale after AH fee.
+// It does not guarantee sales or model historical velocity. Live validation on Connected Realm 1127 (1,924 candidate
+// opportunities, 1,569 distinct variants) peaked at ~90 MB; EU commodities (20,955 opportunities, 8,824 distinct items)
+// peaked at ~104 MB under a standard 256M limit.
 ```
 
 Goals

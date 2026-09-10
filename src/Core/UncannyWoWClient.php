@@ -22,6 +22,7 @@ use UncannyWoW\Core\Service\CharacterService;
 use UncannyWoW\Core\Service\ConnectedRealmService;
 use UncannyWoW\Core\Service\EconomyService;
 use UncannyWoW\Core\Service\ItemService;
+use UncannyWoW\Core\Service\OpportunityService;
 use UncannyWoW\Core\Service\RealmService;
 use UncannyWoW\Provider\Blizzard\Auth\OAuthTokenProvider;
 use UncannyWoW\Provider\Blizzard\Client\BlizzardApiClient;
@@ -48,6 +49,7 @@ class UncannyWoWClient
     private ?ConnectedRealmService $connectedRealmService = null;
     private ?AuctionHouseService $auctionHouseService = null;
     private ?EconomyService $economyService = null;
+    private ?OpportunityService $opportunityService = null;
 
     public function __construct(
         private readonly CharacterRepositoryInterface $characterRepository,
@@ -206,5 +208,10 @@ class UncannyWoWClient
     public function economy(): EconomyService
     {
         return $this->economyService ??= new EconomyService($this->auctionHouse(), $this->config);
+    }
+
+    public function opportunities(): OpportunityService
+    {
+        return $this->opportunityService ??= new OpportunityService($this->economy(), $this->config);
     }
 }

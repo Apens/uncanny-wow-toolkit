@@ -849,7 +849,63 @@ Key Architectural Decisions Validated:
 5. Zero Secondary API Calls:
    - Strictly ZERO Item API calls are performed during economy aggregation. Summaries retain `itemId` or `AuctionItem`.
 
-20. Decisions Summary
+20. Milestone 8 Decisions (Opportunity Analysis Vertical Slice)
+
+1. Pipeline & Architecture Separation:
+   - Pipeline: Blizzard Auction House → M6 streaming → M7 Economy aggregation → M8 Opportunity Analysis.
+   - Operates strictly on already-materialized M7 `CommodityMarketData` and `ConnectedRealmMarketData`.
+   - Pure domain analyzers (`CommodityOpportunityAnalyzer`, `ConnectedRealmOpportunityAnalyzer`) perform in-memory computations without network calls, HTTP clients, or secondary API calls.
+   - `OpportunityService` memoized on `UncannyWoWClient` (`$wow->opportunities()`).
+
+2. Opportunity Definition & Terminology:
+   - A structural opportunity candidate is an observed price spread within the current market snapshot between one or more low-priced acquisition levels and a higher observed target supply level.
+   - Terminology is strictly prospective ("prospective gross revenue", "prospective net profit", "prospective ROI"): assumes successful resale at target price after Auction House fee deduction, without modeling deposit losses, liquidation time, or market velocity.
+
+3. Exact Integer Arithmetic & Overflow Protection:
+   - Currency is represented strictly in 64-bit integer copper. Floating-point arithmetic, BCMath, and GMP are prohibited.
+   - `SafeIntegerMath` provides overflow-checked addition, subtraction, and multiplication.
+   - Exact fee calculation uses `mulDivCeil` with a small bounded multiplier ($0 \le M \le 10000$), quotient/remainder decomposition, and binary double-and-add to eliminate intermediate integer overflow.
+   - `Roi` preserves exact rational numerator/denominator (`profitCopper / acquisitionCostCopper`).
+   - Floored integer basis points metric via `toBasisPoints()` using `mulDivFloor`.
+   - Exact, loss-free ROI sorting via Euclidean continued fraction expansion in `Roi::compareTo()` without float rounding errors, basis-point truncation collisions, or multiplication overflow.
+
+4. Multi-Quantity Barrier Rules (Non-Commodities):
+   - Non-commodity price levels preserve exact total listing `buyoutCopper` and exact `quantityPerListing`.
+   - Only listings with `quantityPerListing === 1` are eligible for acquisition or target pricing.
+   - Any multi-quantity listing (`quantityPerListing > 1`) at or below a target price represents an unresolved lot barrier: it cannot be normalized, divided, or jumped across, and invalidates that target price.
+   - Strict isolation within `MarketItemIdentity`: cross-variant price comparison is strictly forbidden.
+
+5. Re-iterable, Lazy Analysis (`OpportunityAnalysis`):
+   - Implements `Countable` and `\IteratorAggregate<int, T>` via a generator factory closure.
+   - Iteration (`foreach`) and `filter()` operate with $O(1)$ additional memory.
+   - `count()` runs in $O(1)$ memory and $O(U \times P)$ time.
+   - Sorting (`sortByProfitDesc()`, `sortByRoiDesc()`, `sortByCapitalAsc()`) and non-overlapping strategy deduplication (`distinctByHighestProfit()`, `distinctByHighestRoi()`, `distinctByLowestCapital()`) explicitly materialize candidates into memory in $O(C)$ or $O(U)$ space.
+
+6. Live Validation Results & Empirical Market Characteristics (PHP `memory_limit` = 256M):
+   - Connected Realm 1127 (Non-Commodities):
+     - Status: SUCCESS
+     - Total structural candidate opportunities: 1,924 across all valid boundaries
+     - Distinct variants with opportunities: 1,569
+     - Acquisition capital range: 11,000 to 288,691,482,600 copper
+     - Elapsed time: ~9.35 s
+     - Peak memory: ~90 MB
+   - EU Regional Commodities:
+     - Status: SUCCESS
+     - Total structural candidate opportunities: 20,955 across all valid boundaries
+     - Distinct commodities with opportunities: 8,824
+     - Acquisition capital range: 1,500 to 52,225,250,000 copper
+     - Elapsed time: ~31.62 s
+     - Peak memory: ~104 MB
+   - Empirical Observations & Architectural Implications:
+     - Live current-snapshot analysis exposes some extremely large structural spreads and extremely high ROI values caused by very high observed target listings.
+     - This is expected behavior for Milestone 8:
+       - structural opportunity != guaranteed sale
+       - target listing != fair market value
+       - high ROI != reliable opportunity
+       - no historical demand or sales velocity exists yet in a single snapshot
+     - Milestone 8 deliberately performs NO arbitrary outlier filtering, subjective scoring, or heuristic dampening: it accurately reports the raw mathematical spread between observed snapshot price levels. Outlier modeling, historical price trends, and demand scoring belong in future milestones or consuming applications.
+
+21. Decisions Summary
 
 DECIDED NOW
 
@@ -867,11 +923,11 @@ Formatter: PHP-CS-Fixer (.php-cs-fixer.dist.php)
 
 Static Analysis: PHPStan Level 9
 
-Scope: Character Profile, Realm Data, Item Data, Connected Realm, Auction House, and Economy Data Vertical Slices (Milestones 0 through 7 completed)
+Scope: Character Profile, Realm Data, Item Data, Connected Realm, Auction House, Economy Data, and Opportunity Analysis Vertical Slices (Milestones 0 through 8 completed)
 
-API Parameter Naming: Canonical $realmSlug for slug inputs in Character APIs; $slug in Realm APIs; $id for numeric Item and Connected Realm ID inputs; $connectedRealmId for Auction House and Economy connected realm inputs
+API Parameter Naming: Canonical $realmSlug for slug inputs in Character APIs; $slug in Realm APIs; $id for numeric Item and Connected Realm ID inputs; $connectedRealmId for Auction House, Economy, and Opportunity connected realm inputs
 
-Service Memoization: Domain services memoized on UncannyWoWClient facade ($wow->characters(), $wow->realms(), $wow->items(), $wow->connectedRealms(), $wow->auctionHouse(), $wow->economy())
+Service Memoization: Domain services memoized on UncannyWoWClient facade ($wow->characters(), $wow->realms(), $wow->items(), $wow->connectedRealms(), $wow->auctionHouse(), $wow->economy(), $wow->opportunities())
 
 Namespace Support: Profile (profile-{region}), Dynamic (dynamic-{region}), and Static (static-{region}) namespaces
 
@@ -883,7 +939,7 @@ Secondary Data Providers
 
 Additional WoW Domain APIs (Guilds, Mythic+, Raids)
 
-Opportunity Analysis (Milestone 8: flip detection, undervalued scoring, buy/sell recommendations, profit calculations)
+Multi-period historical trend analysis & price forecasting
 
 Connected Realm Search & Index Endpoints (direct ID lookup satisfies Auction House foundation)
 
@@ -897,6 +953,6 @@ ClientConfiguration Splitting (deferred until additional domain needs emerge)
 
 Monorepo Sub-Package Splitting
 
-21. Final Recommendation
+22. Final Recommendation
 
-This architecture freezes the foundational decisions through Milestone 7. It establishes credential security rules, isolates OAuth endpoint resolution, enforces pragmatic domain modeling, and incorporates the findings of the Milestone 2 Architecture Review, Milestone 3 Realm vertical slice, Milestone 4 Item Data vertical slice, Milestone 5 Connected Realm vertical slice, Milestone 6 Auction House vertical slice, and Milestone 7 Economy Data vertical slice.
+This architecture freezes the foundational decisions through Milestone 8. It establishes credential security rules, isolates OAuth endpoint resolution, enforces pragmatic domain modeling, memory-safe streaming, exact integer arithmetic, and incorporates the findings of the Milestone 2 Architecture Review, Milestone 3 Realm vertical slice, Milestone 4 Item Data vertical slice, Milestone 5 Connected Realm vertical slice, Milestone 6 Auction House vertical slice, Milestone 7 Economy Data vertical slice, and Milestone 8 Opportunity Analysis vertical slice.
