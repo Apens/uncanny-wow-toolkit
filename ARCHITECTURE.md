@@ -905,7 +905,32 @@ Key Architectural Decisions Validated:
        - no historical demand or sales velocity exists yet in a single snapshot
      - Milestone 8 deliberately performs NO arbitrary outlier filtering, subjective scoring, or heuristic dampening: it accurately reports the raw mathematical spread between observed snapshot price levels. Outlier modeling, historical price trends, and demand scoring belong in future milestones or consuming applications.
 
-21. Decisions Summary
+21. Milestone 9A - Profession & Recipe Data Foundation
+
+- Purpose:
+  - Establish the authoritative, immutable game data foundation for professions, skill tiers, categories, and recipes required ahead of Crafting Profitability (Milestone 9B).
+  - Strictly data foundation only: no probabilistic crafting models, proc economics, or profit analyzers.
+- Core Endpoints & Namespaces:
+  - Recipe Data: `/data/wow/recipe/{recipeId}` under `static-{region}` namespace.
+  - Profession Data: `/data/wow/profession/{professionId}` under `static-{region}` namespace.
+  - Skill Tier Data: `/data/wow/profession/{professionId}/skill-tier/{skillTierId}` under `static-{region}` namespace.
+- Live Midnight Empirical Findings & Provider Limitations:
+  - Discovered Live Tiers: Midnight Alchemy (Tier 2906, 56 recipes across 12 categories) and Midnight Blacksmithing (Tier 2907, 111 recipes across 11 categories).
+  - Across all 167 scanned Midnight recipes, `crafted_quantity` is 100% absent (`0 / 167`).
+  - Standard item-producing recipes (e.g. *Potion of Recklessness* 52686, *Primalforged Heavy Axe* 52349) also omit `crafted_item`. Instead, major crafting materials and customization options are exposed via `modified_crafting_slots`.
+- Recipe Semantics:
+  - `hasCraftedItemReference()`: Returns `true` only if Blizzard's Recipe payload explicitly supplied `crafted_item` with an item ID. Returning `false` strictly means the provider omitted the static link; it MUST NOT be interpreted as claiming the recipe produces no item in-game.
+  - Direct Reagents (`$reagents`): Represents only the reagent list directly and statically exposed by Blizzard's Recipe payload. It is partial and incomplete for modern modified-crafting recipes.
+  - Modified Crafting Slots (`$modifiedCraftingSlots`): Typed as `list<RecipeModifiedCraftingSlot>`, preserving Blizzard's `display_order`, `slotTypeId`, and localized `name`. Hydrated strictly without N+1 HTTP calls.
+  - Yield / Quantity Tri-State: Omitted or null `crafted_quantity` hydrates to `RecipeCraftedQuantity::unknown()`. Fixed and range quantities remain fully supported for legacy/classic recipes. Malformed quantities throw `InvalidResponseException`.
+- M9B Architectural Consequence:
+  - The official Blizzard Recipe API is **NOT** sufficient to automatically construct a complete Midnight crafting economic plan.
+  - Because modern Midnight recipes omit static `crafted_item` links, omit `crafted_quantity`, and place major reagents into `modified_crafting_slots`, the Recipe payload does not establish exact output item IDs, exact output yields, or complete material costs.
+  - Future Milestone 9B must therefore rely on an explicit caller-supplied `CraftPlan` for these execution parameters. Recipe data provides authoritative metadata and context, but MUST NOT masquerade as a complete craft execution definition.
+- Caching:
+  - Standard PSR-6 caching in `CachedRecipeRepository` (prefix `uw.recipe.`) and `CachedProfessionRepository` (prefixes `uw.profession.` and `uw.skilltier.`) with 24h default TTL.
+
+22. Decisions Summary
 
 DECIDED NOW
 
@@ -923,11 +948,11 @@ Formatter: PHP-CS-Fixer (.php-cs-fixer.dist.php)
 
 Static Analysis: PHPStan Level 9
 
-Scope: Character Profile, Realm Data, Item Data, Connected Realm, Auction House, Economy Data, and Opportunity Analysis Vertical Slices (Milestones 0 through 8 completed)
+Scope: Character Profile, Realm Data, Item Data, Connected Realm, Auction House, Economy Data, Opportunity Analysis, and Profession & Recipe Data (Milestones 0 through 9A completed)
 
-API Parameter Naming: Canonical $realmSlug for slug inputs in Character APIs; $slug in Realm APIs; $id for numeric Item and Connected Realm ID inputs; $connectedRealmId for Auction House, Economy, and Opportunity connected realm inputs
+API Parameter Naming: Canonical $realmSlug for slug inputs in Character APIs; $slug in Realm APIs; $id for numeric Item, Recipe, Profession, and Connected Realm ID inputs; $connectedRealmId for Auction House, Economy, and Opportunity connected realm inputs; $professionId and $skillTierId for skill tier lookups
 
-Service Memoization: Domain services memoized on UncannyWoWClient facade ($wow->characters(), $wow->realms(), $wow->items(), $wow->connectedRealms(), $wow->auctionHouse(), $wow->economy(), $wow->opportunities())
+Service Memoization: Domain services memoized on UncannyWoWClient facade ($wow->characters(), $wow->realms(), $wow->items(), $wow->connectedRealms(), $wow->auctionHouse(), $wow->economy(), $wow->opportunities(), $wow->recipes(), $wow->professions())
 
 Namespace Support: Profile (profile-{region}), Dynamic (dynamic-{region}), and Static (static-{region}) namespaces
 

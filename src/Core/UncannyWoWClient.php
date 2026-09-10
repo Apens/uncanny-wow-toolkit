@@ -13,7 +13,9 @@ use UncannyWoW\Core\Contract\Repository\AuctionHouseRepositoryInterface;
 use UncannyWoW\Core\Contract\Repository\CharacterRepositoryInterface;
 use UncannyWoW\Core\Contract\Repository\ConnectedRealmRepositoryInterface;
 use UncannyWoW\Core\Contract\Repository\ItemRepositoryInterface;
+use UncannyWoW\Core\Contract\Repository\ProfessionRepositoryInterface;
 use UncannyWoW\Core\Contract\Repository\RealmRepositoryInterface;
+use UncannyWoW\Core\Contract\Repository\RecipeRepositoryInterface;
 use UncannyWoW\Core\Domain\Enum\Locale;
 use UncannyWoW\Core\Domain\Enum\Region;
 use UncannyWoW\Core\Domain\Exception\ConfigurationException;
@@ -23,23 +25,31 @@ use UncannyWoW\Core\Service\ConnectedRealmService;
 use UncannyWoW\Core\Service\EconomyService;
 use UncannyWoW\Core\Service\ItemService;
 use UncannyWoW\Core\Service\OpportunityService;
+use UncannyWoW\Core\Service\ProfessionService;
 use UncannyWoW\Core\Service\RealmService;
+use UncannyWoW\Core\Service\RecipeService;
 use UncannyWoW\Provider\Blizzard\Auth\OAuthTokenProvider;
 use UncannyWoW\Provider\Blizzard\Client\BlizzardApiClient;
 use UncannyWoW\Provider\Blizzard\Hydrator\AuctionHouseHydrator;
 use UncannyWoW\Provider\Blizzard\Hydrator\CharacterProfileHydrator;
 use UncannyWoW\Provider\Blizzard\Hydrator\ConnectedRealmHydrator;
 use UncannyWoW\Provider\Blizzard\Hydrator\ItemHydrator;
+use UncannyWoW\Provider\Blizzard\Hydrator\ProfessionHydrator;
 use UncannyWoW\Provider\Blizzard\Hydrator\RealmHydrator;
+use UncannyWoW\Provider\Blizzard\Hydrator\RecipeHydrator;
 use UncannyWoW\Provider\Blizzard\Repository\BlizzardAuctionHouseRepository;
 use UncannyWoW\Provider\Blizzard\Repository\BlizzardCharacterRepository;
 use UncannyWoW\Provider\Blizzard\Repository\BlizzardConnectedRealmRepository;
 use UncannyWoW\Provider\Blizzard\Repository\BlizzardItemRepository;
+use UncannyWoW\Provider\Blizzard\Repository\BlizzardProfessionRepository;
 use UncannyWoW\Provider\Blizzard\Repository\BlizzardRealmRepository;
+use UncannyWoW\Provider\Blizzard\Repository\BlizzardRecipeRepository;
 use UncannyWoW\Provider\Blizzard\Repository\CachedCharacterRepository;
 use UncannyWoW\Provider\Blizzard\Repository\CachedConnectedRealmRepository;
 use UncannyWoW\Provider\Blizzard\Repository\CachedItemRepository;
+use UncannyWoW\Provider\Blizzard\Repository\CachedProfessionRepository;
 use UncannyWoW\Provider\Blizzard\Repository\CachedRealmRepository;
+use UncannyWoW\Provider\Blizzard\Repository\CachedRecipeRepository;
 
 class UncannyWoWClient
 {
@@ -50,6 +60,8 @@ class UncannyWoWClient
     private ?AuctionHouseService $auctionHouseService = null;
     private ?EconomyService $economyService = null;
     private ?OpportunityService $opportunityService = null;
+    private ?RecipeService $recipeService = null;
+    private ?ProfessionService $professionService = null;
 
     public function __construct(
         private readonly CharacterRepositoryInterface $characterRepository,
@@ -58,6 +70,8 @@ class UncannyWoWClient
         private readonly ?ItemRepositoryInterface $itemRepository = null,
         private readonly ?ConnectedRealmRepositoryInterface $connectedRealmRepository = null,
         private readonly ?AuctionHouseRepositoryInterface $auctionHouseRepository = null,
+        private readonly ?RecipeRepositoryInterface $recipeRepository = null,
+        private readonly ?ProfessionRepositoryInterface $professionRepository = null,
     ) {}
 
     public static function create(
@@ -154,6 +168,24 @@ class UncannyWoWClient
         $auctionHouseHydrator = new AuctionHouseHydrator();
         $blizzardAuctionHouseRepository = new BlizzardAuctionHouseRepository($apiClient, $auctionHouseHydrator);
 
+        $recipeHydrator = new RecipeHydrator();
+        $blizzardRecipeRepository = new BlizzardRecipeRepository($apiClient, $recipeHydrator);
+
+        $cachedRecipeRepository = new CachedRecipeRepository(
+            innerRepository: $blizzardRecipeRepository,
+            cachePool: $cachePool,
+            defaultTtlSeconds: 86400,
+        );
+
+        $professionHydrator = new ProfessionHydrator();
+        $blizzardProfessionRepository = new BlizzardProfessionRepository($apiClient, $professionHydrator);
+
+        $cachedProfessionRepository = new CachedProfessionRepository(
+            innerRepository: $blizzardProfessionRepository,
+            cachePool: $cachePool,
+            defaultTtlSeconds: 86400,
+        );
+
         return new self(
             $cachedRepository,
             $config,
@@ -161,6 +193,8 @@ class UncannyWoWClient
             $cachedItemRepository,
             $cachedConnectedRealmRepository,
             $blizzardAuctionHouseRepository,
+            $cachedRecipeRepository,
+            $cachedProfessionRepository,
         );
     }
 
@@ -213,5 +247,23 @@ class UncannyWoWClient
     public function opportunities(): OpportunityService
     {
         return $this->opportunityService ??= new OpportunityService($this->economy(), $this->config);
+    }
+
+    public function recipes(): RecipeService
+    {
+        if ($this->recipeRepository === null) {
+            throw new ConfigurationException('Recipe repository is not configured on this client.');
+        }
+
+        return $this->recipeService ??= new RecipeService($this->recipeRepository, $this->config);
+    }
+
+    public function professions(): ProfessionService
+    {
+        if ($this->professionRepository === null) {
+            throw new ConfigurationException('Profession repository is not configured on this client.');
+        }
+
+        return $this->professionService ??= new ProfessionService($this->professionRepository, $this->config);
     }
 }

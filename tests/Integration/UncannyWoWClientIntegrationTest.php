@@ -96,6 +96,42 @@ final class UncannyWoWClientIntegrationTest extends TestCase
         self::assertInstanceOf(\UncannyWoW\Core\Service\OpportunityService::class, $wow->opportunities());
     }
 
+    public function testRecipesReturnsSameInstance(): void
+    {
+        $factory = new Psr17Factory();
+        $httpClient = $this->createStub(ClientInterface::class);
+
+        $wow = UncannyWoWClient::create(
+            clientId: 'integration-client-id',
+            clientSecret: 'integration-client-secret',
+            httpClient: $httpClient,
+            requestFactory: $factory,
+            streamFactory: $factory,
+            defaultRegion: Region::EU,
+        );
+
+        self::assertSame($wow->recipes(), $wow->recipes());
+        self::assertInstanceOf(\UncannyWoW\Core\Service\RecipeService::class, $wow->recipes());
+    }
+
+    public function testProfessionsReturnsSameInstance(): void
+    {
+        $factory = new Psr17Factory();
+        $httpClient = $this->createStub(ClientInterface::class);
+
+        $wow = UncannyWoWClient::create(
+            clientId: 'integration-client-id',
+            clientSecret: 'integration-client-secret',
+            httpClient: $httpClient,
+            requestFactory: $factory,
+            streamFactory: $factory,
+            defaultRegion: Region::EU,
+        );
+
+        self::assertSame($wow->professions(), $wow->professions());
+        self::assertInstanceOf(\UncannyWoW\Core\Service\ProfessionService::class, $wow->professions());
+    }
+
     public function testSensitiveParameterAttributeOnClientCreate(): void
     {
         $method = new \ReflectionMethod(UncannyWoWClient::class, 'create');
