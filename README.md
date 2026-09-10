@@ -138,6 +138,23 @@ $bestNonCommodities = $wow->opportunities()
 // It does not guarantee sales or model historical velocity. Live validation on Connected Realm 1127 (1,924 candidate
 // opportunities, 1,569 distinct variants) peaked at ~90 MB; EU commodities (20,955 opportunities, 8,824 distinct items)
 // peaked at ~104 MB under a standard 256M limit.
+
+// Fetch recipes and professions metadata (Milestone 9A)
+$recipe = $wow->recipes()->get(id: 52686);
+echo $recipe->name;               // "Potion of Recklessness"
+if ($recipe->hasCraftedItemReference()) {
+    echo $recipe->craftedItemId;
+}
+foreach ($recipe->modifiedCraftingSlots as $slot) {
+    echo sprintf("[%d] %s (order: %d)\n", $slot->slotTypeId, $slot->name, $slot->displayOrder);
+}
+
+$profession = $wow->professions()->get(id: 171);
+echo $profession->name;           // "Alchemy"
+
+$skillTier = $wow->professions()->skillTier(professionId: 171, skillTierId: 2822);
+echo $skillTier->name;            // "Khaz Algar Alchemy"
+$allRecipeIds = $skillTier->getAllRecipeIds();
 ```
 
 Goals
