@@ -78,6 +78,24 @@ final class UncannyWoWClientIntegrationTest extends TestCase
         self::assertSame($wow->characters(), $wow->characters());
     }
 
+    public function testOpportunitiesReturnsSameInstance(): void
+    {
+        $factory = new Psr17Factory();
+        $httpClient = $this->createStub(ClientInterface::class);
+
+        $wow = UncannyWoWClient::create(
+            clientId: 'integration-client-id',
+            clientSecret: 'integration-client-secret',
+            httpClient: $httpClient,
+            requestFactory: $factory,
+            streamFactory: $factory,
+            defaultRegion: Region::EU,
+        );
+
+        self::assertSame($wow->opportunities(), $wow->opportunities());
+        self::assertInstanceOf(\UncannyWoW\Core\Service\OpportunityService::class, $wow->opportunities());
+    }
+
     public function testSensitiveParameterAttributeOnClientCreate(): void
     {
         $method = new \ReflectionMethod(UncannyWoWClient::class, 'create');
